@@ -7,10 +7,59 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
+/// =================
+/// STORE DOMAIN
+/// =================
+
+enum DocumentType {
+  CPF
+  CNPJ
+}
+
+enum StoreStatus {
+  ACTIVE
+  SUSPENDED
+  BLOCKED
+}
+
+model Store {
+  id           String       @id @default(uuid())
+  name         String
+  slug         String       @unique @db.Citext()
+  document     String       @unique
+  documentType DocumentType
+  legalName    String?
+  displayName  String?
+  status       StoreStatus  @default(ACTIVE)
+
+  trialEndsAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  users User[]
+}
+
+/// =================
+/// STORE user
+/// =================
+enum Role {
+  OWNER
+  STAFF
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String
+  passwordHash String
+  role         Role
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  @@unique([email, storeId])
+  @@index([storeId])
 }
