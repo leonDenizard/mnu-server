@@ -29,7 +29,6 @@ model Store {
   document     String       @unique
   documentType DocumentType
   legalName    String?
-  displayName  String?
   status       StoreStatus  @default(ACTIVE)
 
   trialEndsAt DateTime?
@@ -50,6 +49,7 @@ enum Role {
 
 model User {
   id           String   @id @default(uuid())
+  name         String
   email        String
   passwordHash String
   role         Role

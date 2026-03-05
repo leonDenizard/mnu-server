@@ -25,6 +25,7 @@ import {
   usersResponseSchema,
   userSchema
 } from './modules/users/users.schema.js'
+import onboardingRoutes from './modules/onboarding/onboarding.routes.js'
 
 const fastify = Fastify({
   logger: false
@@ -48,6 +49,7 @@ await fastify.register(swagger, {
     ],
     tags: [
       { name: 'Health', description: 'Health check endpoints' },
+      { name: 'Onboarding', description: 'Onboarding endpoints' },
       { name: 'Users', description: 'User management endpoints' }
     ]
   },
@@ -90,6 +92,7 @@ await fastify.register(scalar, {
 })
 
 await fastify.register(healthRoutes)
+await fastify.register(onboardingRoutes)
 await fastify.register(userRoutes, { prefix: '/api' })
 
 fastify.addHook('onClose', async () => {
