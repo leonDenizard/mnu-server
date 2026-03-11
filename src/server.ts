@@ -14,17 +14,6 @@ import 'dotenv/config'
 import prisma from './database.js'
 import healthRoutes from './modules/health/health.routes.js'
 import { healthResponseSchema } from './modules/health/health.schema.js'
-import userRoutes from './modules/users/users.routes.js'
-import {
-  createUserSchema,
-  deleteUserResponseSchema,
-  errorResponseSchema,
-  updateUserSchema,
-  userParamsSchema,
-  userResponseSchema,
-  usersResponseSchema,
-  userSchema
-} from './modules/users/users.schema.js'
 import onboardingRoutes from './modules/onboarding/onboarding.routes.js'
 
 const fastify = Fastify({
@@ -56,14 +45,6 @@ await fastify.register(swagger, {
   transform: jsonSchemaTransform,
   transformObject: createJsonSchemaTransformObject({
     schemas: {
-      User: userSchema,
-      CreateUserInput: createUserSchema,
-      UpdateUserInput: updateUserSchema,
-      UserParams: userParamsSchema,
-      UserResponse: userResponseSchema,
-      UsersResponse: usersResponseSchema,
-      DeleteUserResponse: deleteUserResponseSchema,
-      ErrorResponse: errorResponseSchema,
       HealthResponse: healthResponseSchema
     }
   })
@@ -93,7 +74,7 @@ await fastify.register(scalar, {
 
 await fastify.register(healthRoutes)
 await fastify.register(onboardingRoutes)
-await fastify.register(userRoutes, { prefix: '/api' })
+//await fastify.register(userRoutes, { prefix: '/api' })
 
 fastify.addHook('onClose', async () => {
   await prisma.$disconnect()
