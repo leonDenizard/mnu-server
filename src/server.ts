@@ -10,14 +10,16 @@ import {
   validatorCompiler
 } from 'fastify-type-provider-zod'
 import 'dotenv/config'
+import jwt from '@fastify/jwt'
 
 import prisma from './database.js'
 import healthRoutes from './modules/health/health.routes.js'
 import { healthResponseSchema } from './modules/health/health.schema.js'
 import onboardingRoutes from './modules/onboarding/onboarding.routes.js'
+import authRoutes from './modules/auth/auth.routes.js'
 
 const fastify = Fastify({
-  logger: false
+  logger: true
 }).withTypeProvider<ZodTypeProvider>()
 
 fastify.setValidatorCompiler(validatorCompiler)
@@ -72,8 +74,21 @@ await fastify.register(scalar, {
   }
 })
 
+await fastify.register(jwt, {
+  secret: process.env.JWT_SECRET || 'dev-secret-change-me'
+})
+
+fastify.decorate('authenticate', async function (request: any, reply: any) {
+  try {
+    await request.jwtVerify()
+  } catch {
+    return reply.status(401).send({ success: false, error: 'Unauthorized' })
+  }
+})
+
 await fastify.register(healthRoutes)
 await fastify.register(onboardingRoutes)
+await fastify.register(authRoutes)
 //await fastify.register(userRoutes, { prefix: '/api' })
 
 fastify.addHook('onClose', async () => {
@@ -92,7 +107,7 @@ const start = async () => {
     
     console.log(`Server running at http://localhost:${PORT}`)
     console.log(`Swagger UI: http://localhost:${PORT}/docs`)
-    console.log(`Scalar Reference: http://localhost:${PORT}/reference\n`)
+    console.log(`Scalar Reference: http://localhost:${PORT}/reference`)
   } catch (err) {
     fastify.log.error(err)
     await prisma.$disconnect()
@@ -100,4 +115,5 @@ const start = async () => {
   }
 }
 
+console.log("Satar server")
 start()

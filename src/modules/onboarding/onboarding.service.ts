@@ -70,7 +70,8 @@ export async function onboardingService(data: OnboardingInput){
             id: operation.user.id,
             name: operation.user.name,
             email: operation.user.email,
-            role: operation.user.role
+            role: operation.user.role,
+            storeId: operation.user.storeId
         }
     }
   } catch (error) {
