@@ -17,9 +17,10 @@ import healthRoutes from './modules/health/health.routes.js'
 import { healthResponseSchema } from './modules/health/health.schema.js'
 import onboardingRoutes from './modules/onboarding/onboarding.routes.js'
 import authRoutes from './modules/auth/auth.routes.js'
+import usersRoutes from './modules/users/users.routes.js'
 
 const fastify = Fastify({
-  logger: true
+  logger: false
 }).withTypeProvider<ZodTypeProvider>()
 
 fastify.setValidatorCompiler(validatorCompiler)
@@ -89,6 +90,7 @@ fastify.decorate('authenticate', async function (request: FastifyRequest, reply:
 await fastify.register(healthRoutes)
 await fastify.register(onboardingRoutes)
 await fastify.register(authRoutes)
+await fastify.register(usersRoutes)
 //await fastify.register(userRoutes, { prefix: '/api' })
 
 fastify.addHook('onClose', async () => {

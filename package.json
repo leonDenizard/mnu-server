@@ -8,6 +8,8 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio"
@@ -37,8 +39,11 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.19.10",
+    "jest": "^30.3.0",
     "prisma": "^7.1.1",
+    "ts-jest": "^29.4.9",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
