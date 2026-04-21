@@ -54,7 +54,7 @@ export async function onboardingService(data: OnboardingInput){
         const user = await tx.user.create({
             data: {
                 name: ownerName,
-                email: ownerEmail,
+                email: ownerEmail.trim().toLowerCase(),
                 passwordHash,
                 role: "OWNER",
                 storeId: store.id

@@ -1,4 +1,4 @@
-import Fastify from 'fastify'
+import Fastify, { FastifyReply, FastifyRequest } from 'fastify'
 import swagger from '@fastify/swagger'
 import swaggerUi from '@fastify/swagger-ui'
 import scalar from '@scalar/fastify-api-reference'
@@ -78,7 +78,7 @@ await fastify.register(jwt, {
   secret: process.env.JWT_SECRET || 'dev-secret-change-me'
 })
 
-fastify.decorate('authenticate', async function (request: any, reply: any) {
+fastify.decorate('authenticate', async function (request: FastifyRequest, reply: FastifyReply) {
   try {
     await request.jwtVerify()
   } catch {

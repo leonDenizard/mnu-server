@@ -3,7 +3,7 @@ import { z } from "zod"
 
 export const loginSchema = z.object({
     email: z.string().email("Invalid e-mail"),
-    password: z.string().min(8, "Password must be at least 8 charactes long")
+    password: z.string().min(6, "Password must be at least 6 charactes long")
 })
 
 export const authUserSchema = z.object({
@@ -11,7 +11,15 @@ export const authUserSchema = z.object({
     name: z.string(),
     email: z.string().email(),
     role: z.enum(['OWNER', 'STAFF']),
-    storeId: z.string().uuid()
+    storeId: z.string().uuid(),
+    slug: z.string(),
+    storeName: z.string()
+})
+
+export const jwtPayloadSchema = z.object({
+  sub: z.string().uuid(),
+  storeId: z.string().uuid(),
+  role: z.enum(['OWNER', 'STAFF'])
 })
 
 export const loginResponseSchema = z.object({
@@ -29,5 +37,11 @@ export const authErrorResponseSchema = z.object({
   error: z.string()
 })
 
+export type LoginResult = {
+  user: AuthUser
+}
+
+export type JwtPayload = z.infer<typeof jwtPayloadSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type AuthUser = z.infer<typeof authUserSchema>
+export type TokenUser = Pick<AuthUser, 'id' | 'storeId' | 'role'>
