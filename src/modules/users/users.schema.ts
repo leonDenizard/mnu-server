@@ -43,4 +43,4 @@ export type CreateUser = z.infer<typeof createUserSchema>
 export type UpdateUser = z.infer<typeof updateUserSchema>
 export type UserResponse = z.infer<typeof userResponseSchema>
 export type UsersListResponse = z.infer<typeof usersListResponseSchema>
-export type UserParms = z.infer<typeof userOutputSchema>
+export type UserParms = z.infer<typeof userParamsSchema>
