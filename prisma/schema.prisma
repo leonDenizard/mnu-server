@@ -22,6 +22,16 @@ enum StoreStatus {
   BLOCKED
 }
 
+enum Weekday {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}
+
 model Store {
   id           String       @id @default(uuid())
   name         String
@@ -31,12 +41,51 @@ model Store {
   legalName    String?
   status       StoreStatus  @default(ACTIVE)
 
+  phone    String?
+  whatsapp String?
+
+  addressLine  String?
+  adressNumber String?
+  neighborhood String?
+  city         String?
+  state        String?
+  zipCode      String?
+
+  latidude  Decimal? @db.Decimal(9, 6)
+  longitude Decimal? @db.Decimal(9, 6)
+
+  isOpen Boolean @default(true)
+
+  supportsDelivery Boolean @default(true)
+  supportsPickup   Boolean @default(true)
+  supportsDineIn   Boolean @default(false)
+
+  deliveryRadiusKm Decimal? @db.Decimal(5, 2)
+  deliveryFeeCents Int?
+
   trialEndsAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users User[]
+  users          User[]
+  operatingHours StoreOperatingHour[]
+}
+
+model StoreOperatingHour {
+  id        String  @id @default(uuid())
+  weekday   Weekday
+  openTime  String
+  closeTime String
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([storeId, weekday])
 }
 
 /// =================
