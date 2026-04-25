@@ -45,13 +45,13 @@ model Store {
   whatsapp String?
 
   addressLine  String?
-  adressNumber String?
+  addressNumber String?
   neighborhood String?
   city         String?
   state        String?
   zipCode      String?
 
-  latidude  Decimal? @db.Decimal(9, 6)
+  latitude  Decimal? @db.Decimal(9, 6)
   longitude Decimal? @db.Decimal(9, 6)
 
   isOpen Boolean @default(true)

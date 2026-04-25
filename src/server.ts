@@ -18,6 +18,7 @@ import { healthResponseSchema } from './modules/health/health.schema.js'
 import onboardingRoutes from './modules/onboarding/onboarding.routes.js'
 import authRoutes from './modules/auth/auth.routes.js'
 import usersRoutes from './modules/users/users.routes.js'
+import storesRoutes from './modules/stores/stores.routes.js'
 
 const fastify = Fastify({
   logger: false
@@ -91,6 +92,7 @@ await fastify.register(healthRoutes)
 await fastify.register(onboardingRoutes)
 await fastify.register(authRoutes)
 await fastify.register(usersRoutes)
+await fastify.register(storesRoutes)
 //await fastify.register(userRoutes, { prefix: '/api' })
 
 fastify.addHook('onClose', async () => {
