@@ -7,7 +7,7 @@ export const storeOutputSchema = z.object({
     document: z.string(),
     documentType: z.enum(['CPF', 'CNPJ']),
     legalName: z.string().optional().nullable(),
-    status: z.enum(['ACTIVE', 'SUSPENDED', 'BLOCKED']).nullable(),
+    status: z.enum(['ACTIVE', 'SUSPENDED', 'BLOCKED']),
     phone: z.string().optional().nullable(),
     whatsapp: z.string().nullable(),
     addressLine: z.string().nullable(),
@@ -17,8 +17,8 @@ export const storeOutputSchema = z.object({
     state: z.string().nullable(),
     zipCode: z.string().nullable(),
 
-    latitude: z.number().optional().nullable().nullable(),
-    longitude: z.number().optional().nullable().nullable(),
+    latitude: z.number().optional().nullable(),
+    longitude: z.number().optional().nullable(),
 
     isOpen: z.boolean(),
 
@@ -40,7 +40,7 @@ export const storeResponseSchema = z.object({
 })
 
 export const updateStoreSchema = z.object({
-
+    
     name: z.string().optional(),
     legalName: z.string().optional(),
     phone: z.string().optional(),
