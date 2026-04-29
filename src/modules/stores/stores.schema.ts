@@ -40,7 +40,7 @@ export const storeResponseSchema = z.object({
 })
 
 export const updateStoreSchema = z.object({
-    
+
     name: z.string().optional(),
     legalName: z.string().optional(),
     phone: z.string().optional(),
@@ -62,6 +62,59 @@ export const updateStoreSchema = z.object({
     deliveryFeeCents: z.number().optional(),
 
 })
+
+export const storeOperatingHourOutputSchema = z.object({
+
+    id: z.string().uuid(),
+    weekday: z.enum(['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']),
+    openTime: z.string(),
+    closeTime: z.string(),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime()
+
+})
+
+export const storeOperatingHourInputSchema = z.object({
+
+    weekday: z.enum(['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']),
+    openTime: z.string(),
+    closeTime: z.string(),
+})
+
+const operatingHourSlotSchema = z.object({
+    id: z.string(),
+    openTime: z.string(),
+    closeTime: z.string()
+})
+
+const operatingHoursByDaySchema = z.object({
+    SUNDAY: z.array(operatingHourSlotSchema),
+    MONDAY: z.array(operatingHourSlotSchema),
+    TUESDAY: z.array(operatingHourSlotSchema),
+    WEDNESDAY: z.array(operatingHourSlotSchema),
+    THURSDAY: z.array(operatingHourSlotSchema),
+    FRIDAY: z.array(operatingHourSlotSchema),
+    SATURDAY: z.array(operatingHourSlotSchema)
+})
+
+export const storeOperatingHourResponseSchema = z.object({
+    success: z.literal(true),
+    data: storeOperatingHourOutputSchema
+})
+export const storeOperatingHourByDayResponse = z.object({
+    success: z.literal(true),
+    data: operatingHoursByDaySchema
+})
+
+export const operatingHourIdSchema = z.object({
+    id: z.string().uuid()
+})
 export type StoreOutput = z.infer<typeof storeOutputSchema>
 export type StoreRsponse = z.infer<typeof storeResponseSchema>
 export type UpdateStore = z.infer<typeof updateStoreSchema>
+export type StoreOperatingHourInput = z.infer<typeof storeOperatingHourInputSchema>
+export type StoreOperatingHourOutput = z.infer<typeof storeOperatingHourOutputSchema>
+export type StoreOperatingHourResponse = z.infer<typeof storeOperatingHourResponseSchema>
+export type OperatingHoursByDay = z.infer<typeof operatingHoursByDaySchema>
+export type OperatingHoursByDayResponse = z.infer<typeof storeOperatingHourByDayResponse>
+export type OperatingHourId = z.infer<typeof operatingHourIdSchema>

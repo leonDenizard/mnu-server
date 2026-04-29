@@ -1,7 +1,6 @@
 import { FastifyInstance } from "fastify";
-import { storeResponseSchema, updateStoreSchema } from "./stores.schema";
-import { getCurrentStore, updateOpenStore, updateStore } from "./stores.service";
-import { success } from "zod/v4";
+import { operatingHourIdSchema, storeOperatingHourByDayResponse, storeOperatingHourInputSchema, storeOperatingHourResponseSchema, storeResponseSchema, updateStoreSchema } from "./stores.schema";
+import { createOperatingHour, deleteHourById, getCurrentStore, listOperatingHour, updateOpenStore, updateStore } from "./stores.service";
 
 export default function storesRoutes(fastify: FastifyInstance){
 
@@ -90,4 +89,74 @@ export default function storesRoutes(fastify: FastifyInstance){
             data: updatedStore
         })
     })
+
+    fastify.post('/api/stores/me/operating-hours', {
+        preHandler: [fastify.authenticate],
+        schema: {
+            tags: ['Store'],
+            description: 'Creat hours store operating',
+            response: {
+                201: storeOperatingHourResponseSchema
+            }
+        }
+    }, async (request, reply) => {
+
+        const body = storeOperatingHourInputSchema.parse(request.body)
+
+        const hours = await createOperatingHour({
+
+            storeId: request.user.storeId, 
+            data: body
+        })
+
+        return reply.status(201).send({
+            success: true,
+            data: hours
+        })
+    })
+
+    fastify.get('/api/stores/me/operating-hours', {
+        preHandler: [fastify.authenticate],
+        schema: {
+            tags: ['Store'],
+            description: 'List hours store operating',
+            response: {
+                200: storeOperatingHourByDayResponse
+            }
+        }
+    }, async (request, reply) => {
+
+        const hours = await listOperatingHour({
+            storeId: request.user.storeId 
+        })
+
+        return reply.status(200).send({
+            success: true,
+            data: hours
+        })
+    })
+
+    fastify.delete('/api/stores/me/operating-hours/:id', {
+        preHandler: [fastify.authenticate],
+        schema: {
+            tags: ['Store'],
+            description: 'Delete hours by Id in store operating',
+            response: {
+                200: storeOperatingHourByDayResponse
+            }
+        }
+    }, async (request, reply) => {
+
+        const params = operatingHourIdSchema.parse(request.params) 
+        const hours = await deleteHourById({
+            id: params.id,
+            storeId: request.user.storeId
+        })
+
+        return reply.status(200).send({
+            success: true,
+            data: hours
+        })
+    })
+
 }

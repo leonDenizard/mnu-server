@@ -1,5 +1,5 @@
 import prisma from "../../database"
-import { StoreOutput, UpdateStore } from "./stores.schema"
+import { StoreOutput, UpdateStore, StoreOperatingHourInput, StoreOperatingHourOutput, OperatingHoursByDay } from "./stores.schema"
 
 type GetCurrentStoreInput = {
     storeId: string
@@ -13,6 +13,17 @@ type UpdateStoreInput = {
 type UpdateStoreOpenStatusInput = {
     storeId: string,
     isOpen: boolean
+}
+
+type CreateStoreOperatingHours = {
+
+    storeId: string,
+    data: StoreOperatingHourInput
+}
+
+type DeleteHourByIdInput = {
+    storeId: string,
+    id: string
 }
 
 export async function getCurrentStore({ storeId }: GetCurrentStoreInput): Promise<StoreOutput> {
@@ -132,4 +143,134 @@ export async function updateOpenStore({ storeId, isOpen }: UpdateStoreOpenStatus
 
     }
 
+}
+
+export async function createOperatingHour({ storeId, data }: CreateStoreOperatingHours): Promise<StoreOperatingHourOutput> {
+
+    const existingHour = await prisma.storeOperatingHour.findMany({
+        where: {
+            storeId,
+            weekday: data.weekday
+        }
+    })
+
+    if (data.openTime >= data.closeTime) {
+        throw new Error('Open time must be before close time')
+    }
+
+    const duplicated = existingHour.some((hour) => {
+        hour.openTime === data.openTime && hour.closeTime === data.closeTime
+    })
+
+    if (duplicated) {
+        throw new Error('The registered schedule already exists.')
+    }
+
+    const hasOverlap = existingHour.some((hour) =>
+        data.openTime < hour.closeTime &&
+        data.closeTime > hour.openTime
+    )
+
+    if (hasOverlap) {
+        throw new Error('Time slot cannot be used.')
+    }
+
+
+
+    const newHour = await prisma.storeOperatingHour.create({
+        data: {
+            storeId,
+            closeTime: data.closeTime,
+            openTime: data.openTime,
+            weekday: data.weekday
+        }
+    })
+
+    return {
+        id: newHour.id,
+        openTime: newHour.openTime,
+        closeTime: newHour.closeTime,
+        weekday: newHour.weekday,
+        createdAt: newHour.createdAt.toISOString(),
+        updatedAt: newHour.updatedAt.toISOString()
+    }
+}
+
+export async function listOperatingHour({ storeId }: GetCurrentStoreInput): Promise<OperatingHoursByDay> {
+
+    const hours = await prisma.storeOperatingHour.findMany({
+        where: { storeId },
+        orderBy: [
+            { weekday: 'asc' },
+            { openTime: 'asc' }
+        ]
+    })
+
+    // const grouped = hour.reduce<Record<string, { openTime: string; closeTime: string }[]>>(
+    //     (acc, hour) => {
+    //         if (!acc[hour.weekday]) {
+    //             acc[hour.weekday] = []
+    //         }
+    //         acc[hour.weekday].push({
+    //             openTime: hour.openTime,
+    //             closeTime: hour.closeTime
+    //         })
+
+    //         return acc
+    //     },
+    //     {}
+
+    // )
+
+    const grouped = <OperatingHoursByDay>{
+        SUNDAY: [],
+        MONDAY: [],
+        TUESDAY: [],
+        WEDNESDAY: [],
+        THURSDAY: [],
+        FRIDAY: [],
+        SATURDAY: []
+    }
+    for (const hour of hours) {
+        grouped[hour.weekday].push({
+            id: hour.id,
+            openTime: hour.openTime,
+            closeTime: hour.closeTime
+        })
+    }
+    return grouped
+}
+export async function deleteHourById({ storeId, id }: DeleteHourByIdInput): Promise<OperatingHoursByDay> {
+
+    await prisma.storeOperatingHour.delete({
+        where: {
+            id
+        }
+    })
+
+    const hours = await prisma.storeOperatingHour.findMany({
+        where: { storeId },
+        orderBy: [
+            { weekday: 'asc' },
+            { openTime: 'asc' }
+        ]
+    })
+
+    const grouped = <OperatingHoursByDay>{
+        SUNDAY: [],
+        MONDAY: [],
+        TUESDAY: [],
+        WEDNESDAY: [],
+        THURSDAY: [],
+        FRIDAY: [],
+        SATURDAY: []
+    }
+    for (const hour of hours) {
+        grouped[hour.weekday].push({
+            id: hour.id,
+            openTime: hour.openTime,
+            closeTime: hour.closeTime
+        })
+    }
+    return grouped
 }
