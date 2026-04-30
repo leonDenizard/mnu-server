@@ -31,7 +31,7 @@ export async function login({ email, password }: LoginInput): Promise<LoginResul
   })
 
   if (!user) {
-    throw new UserNotFoundError()
+    throw new InvalidCredentialsError()
   }
   const store = await prisma.store.findUnique({
     where: { id: user.storeId }

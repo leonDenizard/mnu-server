@@ -95,6 +95,7 @@ export default function storesRoutes(fastify: FastifyInstance){
         schema: {
             tags: ['Store'],
             description: 'Creat hours store operating',
+            body: storeOperatingHourInputSchema,
             response: {
                 201: storeOperatingHourResponseSchema
             }
@@ -141,6 +142,7 @@ export default function storesRoutes(fastify: FastifyInstance){
         schema: {
             tags: ['Store'],
             description: 'Delete hours by Id in store operating',
+            params: operatingHourIdSchema,
             response: {
                 200: storeOperatingHourByDayResponse
             }

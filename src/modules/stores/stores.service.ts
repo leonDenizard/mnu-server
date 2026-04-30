@@ -54,13 +54,13 @@ export async function getCurrentStore({ storeId }: GetCurrentStoreInput): Promis
         city: store.city,
         state: store.state,
         zipCode: store.zipCode,
-        latitude: Number(store.latitude),
-        longitude: Number(store.longitude),
+        latitude: Number(store.latitude) ? Number(store.latitude) : null,
+        longitude: Number(store.longitude) ? Number(store.longitude) : null,
         isOpen: store.isOpen,
         supportsDelivery: store.supportsDelivery,
         supportsPickup: store.supportsPickup,
         supportsDineIn: store.supportsDineIn,
-        deliveryRadiusKm: Number(store.deliveryRadiusKm),
+        deliveryRadiusKm: Number(store.deliveryRadiusKm) ? Number(store.deliveryRadiusKm) : null,
         deliveryFeeCents: store.deliveryFeeCents,
         trialEndsAt: store.trialEndsAt?.toISOString(),
         createdAt: store.createdAt.toISOString(),
@@ -159,7 +159,7 @@ export async function createOperatingHour({ storeId, data }: CreateStoreOperatin
     }
 
     const duplicated = existingHour.some((hour) => {
-        hour.openTime === data.openTime && hour.closeTime === data.closeTime
+        return hour.openTime === data.openTime && hour.closeTime === data.closeTime
     })
 
     if (duplicated) {
@@ -242,11 +242,18 @@ export async function listOperatingHour({ storeId }: GetCurrentStoreInput): Prom
 }
 export async function deleteHourById({ storeId, id }: DeleteHourByIdInput): Promise<OperatingHoursByDay> {
 
+    const hourIsStore = await prisma.storeOperatingHour.findFirst({
+        where: { storeId, id }
+    })
     await prisma.storeOperatingHour.delete({
         where: {
             id
         }
     })
+
+    if (!hourIsStore) {
+        throw new Error('Operating hour not found')
+    }
 
     const hours = await prisma.storeOperatingHour.findMany({
         where: { storeId },
