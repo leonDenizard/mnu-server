@@ -19,7 +19,7 @@ import onboardingRoutes from './modules/onboarding/onboarding.routes.js'
 import authRoutes from './modules/auth/auth.routes.js'
 import usersRoutes from './modules/users/users.routes.js'
 import storesRoutes from './modules/stores/stores.routes.js'
-import menuRoutes from './modules/menu/menu.schema.js'
+import menuRoutes from './modules/menu/menu.routes.js'
 
 const fastify = Fastify({
   logger: false
