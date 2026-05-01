@@ -19,6 +19,7 @@ import onboardingRoutes from './modules/onboarding/onboarding.routes.js'
 import authRoutes from './modules/auth/auth.routes.js'
 import usersRoutes from './modules/users/users.routes.js'
 import storesRoutes from './modules/stores/stores.routes.js'
+import menuRoutes from './modules/menu/menu.schema.js'
 
 const fastify = Fastify({
   logger: false
@@ -31,7 +32,7 @@ await fastify.register(swagger, {
   openapi: {
     info: {
       title: 'MNU Server API',
-      description: 'API Server with Fastify, PostgreSQL, Prisma and Zod',
+      description: 'API Server with Typescript, Fastify, PostgreSQL, Prisma and Zod',
       version: '1.0.0'
     },
     servers: [
@@ -40,11 +41,11 @@ await fastify.register(swagger, {
         description: 'Development server'
       }
     ],
-    tags: [
-      { name: 'Health', description: 'Health check endpoints' },
-      { name: 'Onboarding', description: 'Onboarding endpoints' },
-      { name: 'Users', description: 'User management endpoints' }
-    ]
+    // tags: [
+    //   { name: 'Health', description: 'Health check endpoints' },
+    //   { name: 'Onboarding', description: 'Onboarding endpoints' },
+    //   { name: 'Users', description: 'User management endpoints' }
+    // ]
   },
   transform: jsonSchemaTransform,
   transformObject: createJsonSchemaTransformObject({
@@ -93,6 +94,7 @@ await fastify.register(onboardingRoutes)
 await fastify.register(authRoutes)
 await fastify.register(usersRoutes)
 await fastify.register(storesRoutes)
+await fastify.register(menuRoutes)
 //await fastify.register(userRoutes, { prefix: '/api' })
 
 fastify.addHook('onClose', async () => {

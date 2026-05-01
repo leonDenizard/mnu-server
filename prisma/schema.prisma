@@ -44,12 +44,12 @@ model Store {
   phone    String?
   whatsapp String?
 
-  addressLine  String?
+  addressLine   String?
   addressNumber String?
-  neighborhood String?
-  city         String?
-  state        String?
-  zipCode      String?
+  neighborhood  String?
+  city          String?
+  state         String?
+  zipCode       String?
 
   latitude  Decimal? @db.Decimal(9, 6)
   longitude Decimal? @db.Decimal(9, 6)
@@ -69,8 +69,13 @@ model Store {
   updatedAt DateTime @updatedAt
 
   users          User[]
+  categories     Category[]
   operatingHours StoreOperatingHour[]
 }
+
+/// =================
+/// STORE StoreOperatingHour
+/// =================
 
 model StoreOperatingHour {
   id        String  @id @default(uuid())
@@ -111,4 +116,29 @@ model User {
 
   @@unique([email, storeId])
   @@index([storeId])
+}
+
+/// =================
+/// STORE Menu
+/// =================
+
+model Category {
+  id     String  @id @default(uuid())
+  title  String  
+  active Boolean @default(true)
+
+  displayOrder Int     @default(0)
+  showInMenu   Boolean @default(true)
+  showInPos    Boolean @default(false)
+  showInWaiter Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, title])
+  @@index([storeId])
+  @@index([storeId, displayOrder])
 }
