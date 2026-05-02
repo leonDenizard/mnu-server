@@ -1,4 +1,5 @@
 import z from "zod";
+import { createPaginatedResponseSchema } from "../../../shared/schemas/response";
 
 export const categoryInputSchema = z.object({
     title: z.string(),
@@ -21,12 +22,7 @@ export const categoryOutputSchema = z.object({
     updatedAt: z.string()
 })
 
-export const categoryListResponseSchema = z.object({
-    success: z.literal(true),
-    data: z.array(categoryOutputSchema)
-})
-
-
+export const categoryListResponseSchema = createPaginatedResponseSchema(categoryOutputSchema)
 
 export const categoryParamsSchema = z.object({
     id: z.string()

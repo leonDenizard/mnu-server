@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify"
 import { categoryListResponseSchema } from "./categories.schema"
-import { getCategories } from "./categories.service"
+import { getAllCategories } from "./categories.service"
+import { querySchema } from "../../../shared/schemas/pagination"
 
 export default function categoriesRoutes(fastify: FastifyInstance){
 
@@ -9,17 +10,20 @@ export default function categoriesRoutes(fastify: FastifyInstance){
         schema: {
             tags: ['Category'],
             description: 'Get all categories',
+            querystring: querySchema,
             response: {
                 200: categoryListResponseSchema
             }
         }
     }, async (request, reply) => {
 
-        const categories = await getCategories({storeId: request.user.storeId})
+
+        const {page, limit} = request.query
+        const categories = await getAllCategories({storeId: request.user.storeId, page, limit})
 
         return reply.status(200).send({
             success: true,
-            data: categories
+            ...categories
         })
     })
 

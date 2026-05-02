@@ -2,7 +2,9 @@ import prisma from "../../../database"
 import { CategoryInput, CategoryOutput } from "./categories.schema"
 
 type GetCurrentStoreInput = {
-    storeId: string
+    storeId: string,
+    page: number,
+    limit?: number
 }
 
 type UpdateCategoryInput = {
@@ -15,13 +17,32 @@ type DeleteCategoryById = {
     id: string
 }
 
-export async function getCategories({ storeId }: GetCurrentStoreInput): Promise<CategoryOutput[]> {
+type GetAllCategoriesResponse = {
+  data: CategoryOutput[]
+  meta: {
+    total: number
+    page: number
+    lastPage: number
+  }
+}
 
-    const categories = await prisma.category.findMany({
-        where: { storeId }
-    })
+export async function getAllCategories({ storeId, limit = 10, page = 1 }: GetCurrentStoreInput): Promise<GetAllCategoriesResponse> {
 
-    return categories.map((categorie) => ({
+    const skip = (page - 1) * limit
+
+    const [categories, total] = await Promise.all([
+        prisma.category.findMany({
+            where: { storeId },
+            orderBy: { displayOrder: 'asc' },
+            skip,
+            take: limit
+        }),
+        prisma.category.count({
+            where: { storeId }
+        })
+    ])
+
+    const data = categories.map((categorie) => ({
         id: categorie.id,
         title: categorie.title,
         active: categorie.active,
@@ -32,4 +53,13 @@ export async function getCategories({ storeId }: GetCurrentStoreInput): Promise<
         createdAt: categorie.createdAt.toISOString(),
         updatedAt: categorie.updatedAt.toISOString()
     }))
+
+    return {
+        data,
+        meta: {
+            total,
+            page,
+            lastPage: Math.ceil(total / limit)
+        }
+    }
 }
