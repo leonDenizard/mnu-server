@@ -18,12 +18,12 @@ type DeleteCategoryById = {
 }
 
 type GetAllCategoriesResponse = {
-  data: CategoryOutput[]
-  meta: {
-    total: number
-    page: number
-    lastPage: number
-  }
+    data: CategoryOutput[]
+    meta: {
+        total: number
+        page: number
+        lastPage: number
+    }
 }
 
 export async function getAllCategories({ storeId, limit = 10, page = 1 }: GetCurrentStoreInput): Promise<GetAllCategoriesResponse> {
@@ -62,4 +62,32 @@ export async function getAllCategories({ storeId, limit = 10, page = 1 }: GetCur
             lastPage: Math.ceil(total / limit)
         }
     }
+}
+
+export async function createCategory({ storeId, data }: UpdateCategoryInput): Promise<CategoryOutput> {
+
+    const category = await prisma.category.create({
+        data: {
+            storeId,
+            title: data.title,
+            active: data.active,
+            displayOrder: data.displayOrder,
+            showInMenu: data.showInMenu,
+            showInPos: data.showInPos,
+            showInWaiter: data.showInWaiter
+        }
+    })
+
+    return {
+        id: category.id,
+        title: category.title,
+        active: category.active,
+        displayOrder: category.displayOrder,
+        showInMenu: category.showInMenu,
+        showInPos: category.showInPos,
+        showInWaiter: category.showInWaiter,
+        createdAt: category.createdAt.toISOString(),
+        updatedAt: category.updatedAt.toISOString()
+    }
+
 }

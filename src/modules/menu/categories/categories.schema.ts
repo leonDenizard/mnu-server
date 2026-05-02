@@ -24,6 +24,11 @@ export const categoryOutputSchema = z.object({
 
 export const categoryListResponseSchema = createPaginatedResponseSchema(categoryOutputSchema)
 
+export const categoryResponseSchema = z.object({
+  success: z.literal(true),
+  data: categoryOutputSchema
+})
+
 export const categoryParamsSchema = z.object({
     id: z.string()
 })
@@ -32,3 +37,4 @@ export type CategoryOutput = z.infer<typeof categoryOutputSchema>
 export type CategoryInput = z.infer<typeof categoryInputSchema>
 export type CategoryListResponse = z.infer<typeof categoryListResponseSchema>
 export type CategoryParams = z.infer<typeof categoryParamsSchema>
+export type CategoryResponse = z.infer<typeof categoryResponseSchema>
