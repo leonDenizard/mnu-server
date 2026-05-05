@@ -12,8 +12,13 @@ type UpdateCategoryInput = {
     data: CategoryInput
 }
 
+type UpdateCategoryById = {
+    storeId: string
+    id: string,
+    data: CategoryInput
+}
+
 type DeleteCategoryById = {
-    storeId: string,
     id: string
 }
 
@@ -90,4 +95,67 @@ export async function createCategory({ storeId, data }: UpdateCategoryInput): Pr
         updatedAt: category.updatedAt.toISOString()
     }
 
+}
+
+export async function updateCategory({ id, data, storeId}: UpdateCategoryById): Promise<CategoryOutput>{
+
+    const exists = await prisma.category.findFirst({
+        where: {storeId: storeId, title: data.title}
+    })
+    
+    if(exists){
+        throw new Error ("A category with this name already exists")
+    }
+
+    const category = await prisma.category.update({
+        where: { id },
+        data
+    })
+
+    
+
+    if(!category){
+        throw new Error ("Not found categories on store")
+    }
+
+    return{
+        id: category.id,
+        title: category.title,
+        active: category.active,
+        displayOrder: category.displayOrder,
+        showInMenu: category.showInMenu,
+        showInPos: category.showInPos,
+        showInWaiter: category.showInWaiter,
+        createdAt: category.createdAt.toISOString(),
+        updatedAt: category.updatedAt.toISOString()
+    }
+}
+
+export async function deleteCategoryByID({id}: DeleteCategoryById): Promise<CategoryOutput>{
+
+    const existsCategory = await prisma.category.findUnique({
+        where: {id}
+    })
+
+    if(!existsCategory){
+        throw new Error("Not found Category")
+    }
+
+    const category = await prisma.category.delete({
+        where: {id}
+    })
+
+    
+
+    return{
+        id: category.id,
+        title: category.title,
+        active: category.active,
+        displayOrder: category.displayOrder,
+        showInMenu: category.showInMenu,
+        showInPos: category.showInPos,
+        showInWaiter: category.showInWaiter,
+        createdAt: category.createdAt.toISOString(),
+        updatedAt: category.updatedAt.toISOString()
+    }
 }
