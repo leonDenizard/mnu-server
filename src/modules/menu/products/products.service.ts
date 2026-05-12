@@ -1,9 +1,10 @@
 import prisma from "../../../database"
-import { ProductOutput } from "./products.schema"
+import { ProductInput, ProductOutput } from "./products.schema"
 
 type GetCurretProductStoreInput = {
     storeId: string,
     categoryId: string,
+    data: ProductInput
 }
 
 type GetCurretStoreInput = {
@@ -60,5 +61,41 @@ export async function getAllProducts({ page, storeId, limit = 20, categoryId }: 
             page,
             lastPage: Math.ceil(total/limit)
         }
+    }
+}
+
+export async function createProduct({categoryId, storeId, data}:GetCurretProductStoreInput): Promise<ProductOutput>{
+
+    if(!categoryId){
+        throw new Error ("Categoria não encontrada")
+    }
+
+    const product = await prisma.product.create({
+        data:{
+            storeId,
+            categoryId,
+            name: data.name,
+            description: data.description,
+            displayOrder: data.displayOrder,
+            price: data.price,
+            promotionalPrice: data.promotionalPrice,
+            active: data.active,
+            image: data.image,
+        }
+    })
+
+    return{
+        id: product.categoryId,
+        storeId: product.storeId,
+        categoryId: product.categoryId,
+        name: product.name,
+        price: Number(product.price),
+        promotionalPrice: Number(product.promotionalPrice),
+        active: product.active,
+        displayOrder: product.displayOrder,
+        image: product.image,
+        description: product.description ? product.description : null,
+        createdAt: product.createdAt.toISOString(),
+        updatedAt: product.updatedAt.toISOString(),
     }
 }

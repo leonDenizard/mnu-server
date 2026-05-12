@@ -8,7 +8,7 @@ export const productInputSchema = z.object({
     image: z.string().optional(),
     promotionalPrice: z.number().optional(),
     active: z.boolean().optional(),
-    displayOrder: z.number(),
+    displayOrder: z.number().optional(),
     categoryId: z.string().uuid()
 })
 
@@ -20,7 +20,7 @@ export const productOutputSchema = z.object({
     image: z.string().nullable().optional(),
     promotionalPrice: z.number().nullable().optional(),
     active: z.boolean(),
-    displayOrder: z.number(),
+    displayOrder: z.number().nullable().optional(),
     categoryId: z.string().uuid(),
     storeId: z.string().uuid(),
     createdAt: z.string(),
