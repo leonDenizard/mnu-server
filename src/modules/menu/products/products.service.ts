@@ -29,19 +29,24 @@ type GetAllProductsResponse = {
     }
 }
 
+type DeleteProductById = {
+    storeId: string,
+    productId: string
+}
+
 export async function getAllProducts({ page, storeId, limit = 20, categoryId }: GetCurretStoreInput): Promise<GetAllProductsResponse> {
 
     const skip = (page - 1) * limit
 
     const [products, total] = await Promise.all([
         prisma.product.findMany({
-            where: { storeId },
+            where: { storeId, categoryId },
             orderBy: { displayOrder: 'asc' },
             skip,
             take: limit
         }),
         prisma.product.count({
-            where: { categoryId }
+            where: { storeId, categoryId }
         })
     ])
 
@@ -57,27 +62,34 @@ export async function getAllProducts({ page, storeId, limit = 20, categoryId }: 
         categoryId: product.categoryId,
         storeId: product.storeId,
         createdAt: product.createdAt.toISOString(),
-        updatedAt:product.updatedAt.toISOString() 
+        updatedAt: product.updatedAt.toISOString()
     }))
 
-    return{
+    return {
         data,
         meta: {
             total,
             page,
-            lastPage: Math.ceil(total/limit)
+            lastPage: Math.ceil(total / limit)
         }
     }
 }
 
-export async function createProduct({categoryId, storeId, data}:GetCurretProductStoreInput): Promise<ProductOutput>{
+export async function createProduct({ categoryId, storeId, data }: GetCurretProductStoreInput): Promise<ProductOutput> {
 
-    if(!categoryId){
-        throw new Error ("Category not found!")
+    const category = await prisma.category.findFirst({
+        where: {
+            id: categoryId,
+            storeId
+        }
+    })
+
+    if (!category) {
+        throw new Error("Category not found!")
     }
 
     const product = await prisma.product.create({
-        data:{
+        data: {
             storeId,
             categoryId,
             name: data.name,
@@ -90,46 +102,96 @@ export async function createProduct({categoryId, storeId, data}:GetCurretProduct
         }
     })
 
-    return{
-        id: product.categoryId,
+    return {
+        id: product.id,
         storeId: product.storeId,
         categoryId: product.categoryId,
         name: product.name,
         price: Number(product.price),
-        promotionalPrice: Number(product.promotionalPrice),
+        promotionalPrice: product.promotionalPrice !== null ? Number(product.promotionalPrice) : null,
         active: product.active,
         displayOrder: product.displayOrder,
-        image: product.image,
-        description: product.description ? product.description : null,
+        image: product.image ?? null,
+        description: product.description ?? null,
         createdAt: product.createdAt.toISOString(),
         updatedAt: product.updatedAt.toISOString(),
     }
 }
 
-export async function updateProduct({data, productId, storeId}: UpdateCurretProductStoreInput): Promise<ProductOutput>{
+export async function updateProduct({ data, productId, storeId }: UpdateCurretProductStoreInput): Promise<ProductOutput> {
+
+    const existingProduct = await prisma.product.findFirst({
+        where: {
+            id: productId,
+            storeId
+        }
+    })
+
+    if (!existingProduct) {
+        throw new Error("Product not found")
+    }
 
     const product = await prisma.product.update({
         where: {
-            id: productId, storeId: storeId
+            id: productId
         },
         data
     })
 
-    if(!product){
-        throw new Error ("Not found product")
+    if (!product) {
+        throw new Error("Not found product")
     }
 
-    return{
+    return {
         id: product.id,
         categoryId: product.categoryId,
         storeId: product.storeId,
         name: product.name,
         active: product.active,
-        description: product.description,
+        description: product.description ?? null,
         price: Number(product.price),
-        promotionalPrice: Number(product.promotionalPrice),
+        promotionalPrice: product.promotionalPrice !== null ? Number(product.promotionalPrice) : null,
         displayOrder: product.displayOrder,
-        image: product.image,
+        image: product.image ?? null,
+        createdAt: product.createdAt.toISOString(),
+        updatedAt: product.updatedAt.toISOString()
+    }
+}
+
+export async function deleteProductById({ productId, storeId }: DeleteProductById): Promise<ProductOutput> {
+
+    const existingProduct = await prisma.product.findFirst({
+        where: {
+            id: productId,
+            storeId
+        }
+    })
+
+    if (!existingProduct) {
+        throw new Error("Product not found")
+    }
+
+    if (!productId) {
+        throw new Error("ID product invalid or empty")
+    }
+
+    const product = await prisma.product.delete({
+        where: {
+            id: productId
+        }
+    })
+
+    return {
+        id: product.id,
+        categoryId: product.categoryId,
+        storeId: product.storeId,
+        name: product.name,
+        active: product.active,
+        description: product.description ?? null,
+        price: Number(product.price),
+        promotionalPrice: product.promotionalPrice !== null ? Number(product.promotionalPrice) : null,
+        displayOrder: product.displayOrder,
+        image: product.image ?? null,
         createdAt: product.createdAt.toISOString(),
         updatedAt: product.updatedAt.toISOString()
     }
