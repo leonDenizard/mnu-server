@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify"
 import { querySchema } from "../../../shared/schemas/pagination"
-import { categoryParamsSchema, productInputSchema, productListResponseSchema, productResponseSchema } from "./products.schema"
-import { createProduct, getAllProducts } from "./products.service"
+import { productInputSchema, productListResponseSchema, productParamsSchema, productResponseSchema } from "./products.schema"
+import { createProduct, getAllProducts, updateProduct } from "./products.service"
 
 export default function productsRoutes(fastify: FastifyInstance) {
 
@@ -11,7 +11,7 @@ export default function productsRoutes(fastify: FastifyInstance) {
             tags: ['Product'],
             description: 'Get all product on category',
             querystring: querySchema,
-            params: categoryParamsSchema,
+            params: productParamsSchema,
             response: {
                 200: productListResponseSchema
             }
@@ -19,7 +19,7 @@ export default function productsRoutes(fastify: FastifyInstance) {
     }, async (request, reply) => {
 
         const { page, limit} = querySchema.parse(request.query)
-        const params = categoryParamsSchema.parse(request.params)
+        const params = productParamsSchema.parse(request.params)
         const products = await getAllProducts({storeId: request.user.storeId, page, limit, categoryId: params.id})
 
         reply.status(200).send({
@@ -31,7 +31,7 @@ export default function productsRoutes(fastify: FastifyInstance) {
     fastify.post('/api/menu/products', {
         preHandler: [fastify.authenticate],
         schema: {
-            tags: ['Category'],
+            tags: ['Product'],
             description: 'Create category',
             body: productInputSchema,
             response: {
@@ -51,29 +51,38 @@ export default function productsRoutes(fastify: FastifyInstance) {
         
     })
 
-    // fastify.patch('/api/menu/categories/:id', {
-    //     preHandler: [fastify.authenticate],
-    //     schema: {
-    //         tags: ['Category'],
-    //         description: 'Update category by ID',
-    //         body: categoryInputSchema,
-    //         params: categoryParamsSchema,
-    //         response: {
-    //             201: categoryResponseSchema
-    //         }
-    //     }
-    // }, async (request, reply) => {
+    fastify.patch('/api/menu/products/:id', {
+        preHandler: [fastify.authenticate],
+        schema: {
+            tags: ['Product'],
+            description: 'Update product by ID',
+            body: productInputSchema,
+            params: productParamsSchema,
+            response: {
+                201: productResponseSchema
+            }
+        }
+    }, async (request, reply) => {
 
-    //     reply.status(201).send({
-    //         success: true,
-    //         data: category
-    //     })
-    // })
+        const params = productParamsSchema.parse(request.params)
+        const body = productInputSchema.parse(request.body)
+
+        const product = await updateProduct({
+            productId: params.id, 
+            storeId: request.user.storeId, 
+            data: body
+        })
+
+        reply.status(201).send({
+            success: true,
+            data: product
+        })
+    })
 
     // fastify.delete('/api/menu/categories/:id', {
     //     preHandler: [fastify.authenticate],
     //     schema: {
-    //         tags: ['Category'],
+    //         tags: ['Product'],
     //         description: 'Delete category by ID',
     //         params: ,
     //         response: {

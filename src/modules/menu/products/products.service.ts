@@ -7,6 +7,12 @@ type GetCurretProductStoreInput = {
     data: ProductInput
 }
 
+type UpdateCurretProductStoreInput = {
+    productId: string,
+    storeId: string,
+    data: ProductInput
+}
+
 type GetCurretStoreInput = {
     storeId: string,
     categoryId: string,
@@ -67,7 +73,7 @@ export async function getAllProducts({ page, storeId, limit = 20, categoryId }: 
 export async function createProduct({categoryId, storeId, data}:GetCurretProductStoreInput): Promise<ProductOutput>{
 
     if(!categoryId){
-        throw new Error ("Categoria não encontrada")
+        throw new Error ("Category not found!")
     }
 
     const product = await prisma.product.create({
@@ -97,5 +103,34 @@ export async function createProduct({categoryId, storeId, data}:GetCurretProduct
         description: product.description ? product.description : null,
         createdAt: product.createdAt.toISOString(),
         updatedAt: product.updatedAt.toISOString(),
+    }
+}
+
+export async function updateProduct({data, productId, storeId}: UpdateCurretProductStoreInput): Promise<ProductOutput>{
+
+    const product = await prisma.product.update({
+        where: {
+            id: productId, storeId: storeId
+        },
+        data
+    })
+
+    if(!product){
+        throw new Error ("Not found product")
+    }
+
+    return{
+        id: product.id,
+        categoryId: product.categoryId,
+        storeId: product.storeId,
+        name: product.name,
+        active: product.active,
+        description: product.description,
+        price: Number(product.price),
+        promotionalPrice: Number(product.promotionalPrice),
+        displayOrder: product.displayOrder,
+        image: product.image,
+        createdAt: product.createdAt.toISOString(),
+        updatedAt: product.updatedAt.toISOString()
     }
 }
