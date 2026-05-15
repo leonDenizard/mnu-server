@@ -72,6 +72,7 @@ model Store {
   categories     Category[]
   products       Product[]
   operatingHours StoreOperatingHour[]
+  modifierGroups ModifierGroup[]
 }
 
 /// =================
@@ -159,10 +160,67 @@ model Product {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  store    Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  category       Category               @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  store          Store                  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  modifierGroups ProductModifierGroup[]
 
   @@unique([storeId, categoryId, name])
   @@index([storeId])
   @@index([storeId, displayOrder])
+}
+
+model ModifierGroup {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  surname       String?
+  active        Boolean  @default(true)
+  required      Boolean  @default(false)
+  minSelections Int      @default(0)
+  maxSelections Int      @default(1)
+  displayOrder  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  options      ModifierOption[]
+  productLinks ProductModifierGroup[]
+
+  @@unique([storeId, surname])
+  @@index([storeId])
+  @@index([storeId, displayOrder])
+}
+
+model ModifierOption {
+  id           String   @id @default(uuid())
+  name         String
+  price        Decimal  @db.Decimal(10, 2)
+  maxQuantity  Int?
+  active       Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  modifierGroupId String
+  modifierGroup   ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+
+  @@index([modifierGroupId])
+  @@index([modifierGroupId, displayOrder])
+}
+
+model ProductModifierGroup {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  productId       String
+  modifierGroupId String
+
+  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  modifierGroup ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, modifierGroupId])
+  @@index([productId])
+  @@index([modifierGroupId])
 }

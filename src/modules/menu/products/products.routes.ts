@@ -59,7 +59,7 @@ export default function productsRoutes(fastify: FastifyInstance) {
             body: productInputSchema,
             params: productParamsSchema,
             response: {
-                201: productResponseSchema
+                200: productResponseSchema
             }
         }
     }, async (request, reply) => {
@@ -73,7 +73,7 @@ export default function productsRoutes(fastify: FastifyInstance) {
             data: body
         })
 
-        reply.status(201).send({
+        reply.status(200).send({
             success: true,
             data: product
         })
@@ -86,7 +86,7 @@ export default function productsRoutes(fastify: FastifyInstance) {
             description: 'Delete product by ID',
             params: productParamsSchema,
             response: {
-                201: productResponseSchema
+                200: productResponseSchema
             }
         }
     }, async (request, reply) => {
@@ -95,7 +95,7 @@ export default function productsRoutes(fastify: FastifyInstance) {
 
         const product = await deleteProductById({ productId: params.id, storeId: request.user.storeId })
 
-        reply.status(201).send({
+        reply.status(200).send({
             success: true,
             data: product
         })
