@@ -29,7 +29,7 @@ type GetAllProductsResponse = {
     }
 }
 
-type DeleteProductById = {
+type ProductById = {
     storeId: string,
     productId: string
 }
@@ -72,6 +72,32 @@ export async function getAllProducts({ page, storeId, limit = 20, categoryId }: 
             page,
             lastPage: Math.ceil(total / limit)
         }
+    }
+}
+
+export async function getProductById({ storeId, productId }: ProductById): Promise<ProductOutput> {
+
+    const product = await prisma.product.findUnique({
+        where: { storeId: storeId, id: productId }
+    })
+
+    if(!product){
+        throw new Error("Product not found") 
+    }
+    
+    return {
+        id: product.id,
+        storeId: product.storeId,
+        categoryId: product.categoryId,
+        name: product.name,
+        price: Number(product.price),
+        promotionalPrice: product.promotionalPrice !== null ? Number(product.promotionalPrice) : null,
+        active: product.active,
+        displayOrder: product.displayOrder,
+        image: product.image ?? null,
+        description: product.description ?? null,
+        createdAt: product.createdAt.toISOString(),
+        updatedAt: product.updatedAt.toISOString(),
     }
 }
 
@@ -158,7 +184,7 @@ export async function updateProduct({ data, productId, storeId }: UpdateCurretPr
     }
 }
 
-export async function deleteProductById({ productId, storeId }: DeleteProductById): Promise<ProductOutput> {
+export async function deleteProductById({ productId, storeId }: ProductById): Promise<ProductOutput> {
 
     const existingProduct = await prisma.product.findFirst({
         where: {

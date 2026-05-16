@@ -1,17 +1,16 @@
 import { FastifyInstance } from "fastify"
 import { querySchema } from "../../../shared/schemas/pagination"
 import { productInputSchema, productListResponseSchema, productParamsSchema, productResponseSchema } from "./products.schema"
-import { createProduct, deleteProductById, getAllProducts, updateProduct } from "./products.service"
+import { createProduct, deleteProductById, getAllProducts, getProductById, updateProduct } from "./products.service"
 
 export default function productsRoutes(fastify: FastifyInstance) {
 
-    fastify.get('/api/menu/products/:id', {
+    fastify.get('/api/menu/products/', {
         preHandler: [fastify.authenticate],
         schema: {
             tags: ['Product'],
             description: 'Get all product on category',
             querystring: querySchema,
-            params: productParamsSchema,
             response: {
                 200: productListResponseSchema
             }
@@ -25,6 +24,28 @@ export default function productsRoutes(fastify: FastifyInstance) {
         reply.status(200).send({
             success: true,
             ...products
+        })
+    })
+
+    fastify.get('/api/menu/products/:id', {
+        preHandler: [fastify.authenticate],
+        schema: {
+            tags: ['Product'],
+            description: 'Get product by ID',
+            params: productParamsSchema,
+            response: {
+                200: productResponseSchema
+            }
+        }
+    }, async (request, reply) => {
+
+        const params = productParamsSchema.parse(request.params)
+        
+        const product = await getProductById({ storeId: request.user.storeId, productId: params.id })
+
+        reply.status(200).send({
+            success: true,
+            data: product
         })
     })
 
