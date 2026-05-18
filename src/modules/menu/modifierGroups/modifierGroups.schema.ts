@@ -1,0 +1,61 @@
+import z from "zod";
+import { createPaginatedResponseSchema } from "../../../shared/schemas/response";
+
+export const optionInputSchema = z.object({
+    name: z.string().min(3),
+    price: z.number().min(0),
+    maxQuantity: z.number().int().positive().optional().nullable(),
+    displayOrder: z.number().int().min(0).optional()
+})
+
+export const createInputModifierGroupsSchema = z.object({
+    name: z.string().min(3),
+    description: z.string().max(400).optional().nullable(),
+    surname: z.string().max(50).optional(),
+    required: z.boolean().optional(),
+    minSelections: z.number().int().min(0),
+    maxSelections: z.number().int().min(1),
+    displayOrder: z.number().int().min(0).optional(),
+    options: z.array(optionInputSchema).min(1)
+})
+
+const modifierOptionOutputSchema = z.object({
+    id: z.string().uuid(),
+    name: z.string(),
+    price: z.number(),
+    displayOrder: z.number()
+})
+
+export const modifierGroupsOutputSchema = z.object({
+    id: z.string().uuid(),
+    name: z.string(),
+    description: z.string().nullable().optional(),
+    surname: z.string().nullable().optional(),
+    active: z.boolean(),
+    required: z.boolean(),
+    minSelections: z.number(),
+    maxSelections: z.number(),
+    displayOrder: z.number(),
+    options: z.array(modifierOptionOutputSchema),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+})
+
+export const modifierGroupsResponse = z.object({
+    success: z.literal(true),
+    data: modifierGroupsOutputSchema
+})
+
+export const modifierGroupsListResponse = createPaginatedResponseSchema(modifierGroupsOutputSchema)
+
+export const modifierGroupsParamsSchema = z.object({
+    id: z.string().uuid()
+})
+
+export const productParamsSchema = z.object({
+    id: z.string().uuid()
+})
+
+export const linkModifierGroupSchema = z.object({
+  modifierGroupId: z.string().uuid()
+})
