@@ -12,6 +12,7 @@ export const createInputModifierGroupsSchema = z.object({
     name: z.string().min(3),
     description: z.string().max(400).optional().nullable(),
     surname: z.string().max(50).optional(),
+    active: z.boolean(),
     required: z.boolean().optional(),
     minSelections: z.number().int().min(0),
     maxSelections: z.number().int().min(1),
@@ -59,3 +60,13 @@ export const productParamsSchema = z.object({
 export const linkModifierGroupSchema = z.object({
   modifierGroupId: z.string().uuid()
 })
+
+export type OptionInput = z.infer<typeof optionInputSchema>
+export type CreateInputModifierGroups = z.infer<typeof createInputModifierGroupsSchema>
+export type ModifierOptionOutput = z.infer<typeof modifierOptionOutputSchema>
+export type ModifierGroupsOutput = z.infer<typeof modifierGroupsOutputSchema>
+export type ModifierGroups = z.infer<typeof modifierGroupsResponse>
+export type ModifierGroupsListResponse = z.infer<typeof modifierGroupsListResponse>
+export type ModifierGroupsParams = z.infer<typeof modifierGroupsParamsSchema>
+export type ProductParams = z.infer<typeof productParamsSchema>
+export type LinkModifierGroup = z.infer<typeof linkModifierGroupSchema>
