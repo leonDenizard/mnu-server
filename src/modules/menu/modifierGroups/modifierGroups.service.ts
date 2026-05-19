@@ -44,7 +44,6 @@ export async function createModifierGroups({ storeId, data }: modifierGroupInput
             storeId,
             name: data.name,
             surname: data.surname,
-            description: data.description,
             minSelections,
             maxSelections: data.maxSelections,
             active: data.active,
@@ -55,7 +54,8 @@ export async function createModifierGroups({ storeId, data }: modifierGroupInput
                     name: option.name,
                     price: option.price,
                     displayOrder: option.displayOrder,
-                    maxQuantity: option.maxQuantity
+                    maxQuantity: option.maxQuantity,
+                    description: option.description
                 }))
             }
         },
@@ -68,7 +68,6 @@ export async function createModifierGroups({ storeId, data }: modifierGroupInput
         id: modifierGroup.id,
         name: modifierGroup.name,
         surname: modifierGroup.surname,
-        description: modifierGroup.description,
         minSelections: modifierGroup.minSelections,
         maxSelections: modifierGroup.maxSelections,
         required: modifierGroup.required,
@@ -79,6 +78,7 @@ export async function createModifierGroups({ storeId, data }: modifierGroupInput
             price: Number(option.price),
             name: option.name,
             displayOrder: option.displayOrder,
+            description: option.description
         })),
         createdAt: modifierGroup.createdAt.toISOString(),
         updatedAt: modifierGroup.updatedAt.toISOString()

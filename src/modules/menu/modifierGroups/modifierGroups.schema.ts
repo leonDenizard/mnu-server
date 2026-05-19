@@ -5,14 +5,14 @@ export const optionInputSchema = z.object({
     name: z.string().min(3),
     price: z.number().min(0),
     maxQuantity: z.number().int().positive().optional().nullable(),
-    displayOrder: z.number().int().min(0).optional()
+    displayOrder: z.number().int().min(0).optional(),
+    description: z.string().max(400).optional().nullable(),
 })
 
 export const createInputModifierGroupsSchema = z.object({
     name: z.string().min(3),
-    description: z.string().max(400).optional().nullable(),
     surname: z.string().max(50).optional(),
-    active: z.boolean(),
+    active: z.boolean().optional(),
     required: z.boolean().optional(),
     minSelections: z.number().int().min(0),
     maxSelections: z.number().int().min(1),
@@ -24,13 +24,13 @@ const modifierOptionOutputSchema = z.object({
     id: z.string().uuid(),
     name: z.string(),
     price: z.number(),
+    description: z.string().max(400).optional().nullable(),
     displayOrder: z.number()
 })
 
 export const modifierGroupsOutputSchema = z.object({
     id: z.string().uuid(),
     name: z.string(),
-    description: z.string().nullable().optional(),
     surname: z.string().nullable().optional(),
     active: z.boolean(),
     required: z.boolean(),

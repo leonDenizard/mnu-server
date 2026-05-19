@@ -172,7 +172,6 @@ model Product {
 model ModifierGroup {
   id            String   @id @default(uuid())
   name          String
-  description   String?
   surname       String?
   active        Boolean  @default(true)
   required      Boolean  @default(false)
@@ -196,6 +195,7 @@ model ModifierGroup {
 model ModifierOption {
   id           String   @id @default(uuid())
   name         String
+  description   String?
   price        Decimal  @db.Decimal(10, 2)
   maxQuantity  Int?
   active       Boolean  @default(true)
