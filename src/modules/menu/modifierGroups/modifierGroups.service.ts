@@ -5,6 +5,10 @@ type modifierGroupInput = {
     storeId: string,
     data: CreateInputModifierGroups
 }
+type GetCurrentStoreInput = {
+    storeId: string
+}
+
 export async function createModifierGroups({ storeId, data }: modifierGroupInput): Promise<ModifierGroupsOutput> {
 
     const existingName = await prisma.modifierGroup.findFirst({
@@ -83,4 +87,36 @@ export async function createModifierGroups({ storeId, data }: modifierGroupInput
         createdAt: modifierGroup.createdAt.toISOString(),
         updatedAt: modifierGroup.updatedAt.toISOString()
     }
+}
+
+export async function getAllModifierGroups({storeId}: GetCurrentStoreInput): Promise<ModifierGroupsOutput[]>{
+
+    const modifierGroup = await prisma.modifierGroup.findMany({
+        where: { storeId },
+        include: {
+            options: true
+        }
+    })
+
+    const data = modifierGroup.map((mg) => ({
+        id: mg.id,
+        name: mg.name,
+        surname: mg.surname,
+        minSelections: mg.minSelections,
+        maxSelections: mg.maxSelections,
+        required: mg.required,
+        active: mg.active,
+        displayOrder: mg.displayOrder,
+        options: mg.options.map((option) => ({
+            id: option.id,
+            price: Number(option.price),
+            name: option.name,
+            displayOrder: option.displayOrder,
+            description: option.description
+        })),
+        createdAt: mg.createdAt.toISOString(),
+        updatedAt: mg.updatedAt.toISOString()
+    }))
+
+    return data
 }

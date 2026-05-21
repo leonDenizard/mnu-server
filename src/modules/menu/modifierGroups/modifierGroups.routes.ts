@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
-import { createInputModifierGroupsSchema, modifierGroupsResponse } from "./modifierGroups.schema";
-import { createModifierGroups } from "./modifierGroups.service";
+import { createInputModifierGroupsSchema, modifierGroupsArrayResponseSchema, modifierGroupsResponse } from "./modifierGroups.schema";
+import { createModifierGroups, getAllModifierGroups } from "./modifierGroups.service";
 
 export default function modifierGroups(fastify: FastifyInstance){
 
@@ -19,6 +19,26 @@ export default function modifierGroups(fastify: FastifyInstance){
         const modifierGroup = await createModifierGroups({storeId: request.user.storeId, data: body})
 
         reply.status(201).send({
+            success: true,
+            data: modifierGroup
+        })
+    })
+
+    fastify.get('/api/menu/modifier-groups', {
+        preHandler: [fastify.authenticate],
+        schema: {
+            tags: ['Modifier Groups'],
+            description: 'Get all modifier groups on menu',
+            response: {
+                200: modifierGroupsArrayResponseSchema
+            }
+        }
+    }, async (request, reply) => {
+
+       
+        const modifierGroup = await getAllModifierGroups({storeId: request.user.storeId})
+
+        reply.status(200).send({
             success: true,
             data: modifierGroup
         })

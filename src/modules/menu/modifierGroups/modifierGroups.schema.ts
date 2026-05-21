@@ -49,6 +49,11 @@ export const modifierGroupsResponse = z.object({
 
 export const modifierGroupsListResponse = createPaginatedResponseSchema(modifierGroupsOutputSchema)
 
+export const modifierGroupsArrayResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.array(modifierGroupsOutputSchema)
+})
+
 export const modifierGroupsParamsSchema = z.object({
     id: z.string().uuid()
 })
@@ -67,6 +72,7 @@ export type ModifierOptionOutput = z.infer<typeof modifierOptionOutputSchema>
 export type ModifierGroupsOutput = z.infer<typeof modifierGroupsOutputSchema>
 export type ModifierGroups = z.infer<typeof modifierGroupsResponse>
 export type ModifierGroupsListResponse = z.infer<typeof modifierGroupsListResponse>
+export type ModifierGroupsArrayResponse = z.infer<typeof modifierGroupsArrayResponseSchema>
 export type ModifierGroupsParams = z.infer<typeof modifierGroupsParamsSchema>
 export type ProductParams = z.infer<typeof productParamsSchema>
 export type LinkModifierGroup = z.infer<typeof linkModifierGroupSchema>
