@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { createInputModifierGroupsSchema, modifierGroupsArrayResponseSchema, modifierGroupsParamsSchema, modifierGroupsResponse, updateInputModifierGroupsSchema, updateModifierGroupsResponse } from "./modifierGroups.schema";
-import { createModifierGroups, getAllModifierGroups, updateModifierGroup } from "./modifierGroups.service";
+import { createModifierGroups, deleteModifierGroupById, getAllModifierGroups, updateModifierGroup } from "./modifierGroups.service";
 
 export default function modifierGroups(fastify: FastifyInstance){
 
@@ -64,6 +64,31 @@ export default function modifierGroups(fastify: FastifyInstance){
             storeId: request.user.storeId,
             data: body,
             modifierGroupId: params.id     
+        })
+
+        reply.status(200).send({
+            success: true,
+            data: modifierGroup
+        })
+    })
+
+    fastify.delete('/api/menu/modifier-groups/:id', {
+        preHandler: [fastify.authenticate],
+        schema: {
+            tags: ['Modifier Groups'],
+            description: 'Delete a modifier groups on menu',
+            params: modifierGroupsParamsSchema,
+            response: {
+                200: updateModifierGroupsResponse
+            }
+        }
+    }, async (request, reply) => {
+
+       const params = modifierGroupsParamsSchema.parse(request.params)
+
+        const modifierGroup = await deleteModifierGroupById({
+            storeId: request.user.storeId,
+            id: params.id     
         })
 
         reply.status(200).send({

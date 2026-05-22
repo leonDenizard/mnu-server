@@ -15,6 +15,11 @@ type UpdateModifierGroup = {
     data: UpdateInputModifierGroups
 }
 
+type ModifierGroupById = {
+    storeId: string,
+    id: string
+}
+
 export async function createModifierGroups({ storeId, data }: ModifierGroupInput): Promise<ModifierGroupsOutput> {
 
     const existingName = await prisma.modifierGroup.findFirst({
@@ -144,7 +149,7 @@ export async function updateModifierGroup({ storeId, modifierGroupId, data }: Up
     const nextMaxSelections = data.maxSelections ?? currentGroup.maxSelections
     const nextMinSelections = data.minSelections ?? currentGroup.minSelections
 
-    
+
     const normalizedMinSelections = nextRequired ? Math.max(1, nextMinSelections) : nextMinSelections
 
     if (nextMaxSelections < normalizedMinSelections) {
@@ -203,4 +208,33 @@ export async function updateModifierGroup({ storeId, modifierGroupId, data }: Up
         createdAt: modifierGroup.createdAt.toISOString(),
         updatedAt: modifierGroup.updatedAt.toISOString()
     }
+}
+
+export async function deleteModifierGroupById({ id, storeId }: ModifierGroupById): Promise<UpdateModifierGroupsOutput> {
+
+    const existingGroup = await prisma.modifierGroup.findUnique({
+        where: {id, storeId}
+    })
+
+    if(!existingGroup){
+        throw new Error("Modifier Group not found")
+    }
+
+    const modifierGroup = await prisma.modifierGroup.delete({
+        where: { id, storeId }
+    })
+
+    return {
+        id: modifierGroup.id,
+        name: modifierGroup.name,
+        surname: modifierGroup.surname,
+        minSelections: modifierGroup.minSelections,
+        maxSelections: modifierGroup.maxSelections,
+        required: modifierGroup.required,
+        active: modifierGroup.active,
+        displayOrder: modifierGroup.displayOrder,
+        createdAt: modifierGroup.createdAt.toISOString(),
+        updatedAt: modifierGroup.updatedAt.toISOString()
+    }
+
 }
