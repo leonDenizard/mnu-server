@@ -195,8 +195,9 @@ model ModifierGroup {
 model ModifierOption {
   id           String   @id @default(uuid())
   name         String
-  description   String?
-  price        Decimal  @db.Decimal(10, 2)
+  description  String?
+  image        String?
+  price        Decimal  @db.Decimal(10, 2) @default(0)
   maxQuantity  Int?
   active       Boolean  @default(true)
   displayOrder Int      @default(0)
