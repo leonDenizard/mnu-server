@@ -1,7 +1,7 @@
 import prisma from "../../../database"
-import { CreateInputModifierGroups, ModifierGroupsOutput } from "./modifierGroups.schema"
+import { CreateInputModifierGroups, ModifierGroupsOutput, UpdateInputModifierGroups, UpdateModifierGroupsOutput } from "./modifierGroups.schema"
 
-type modifierGroupInput = {
+type ModifierGroupInput = {
     storeId: string,
     data: CreateInputModifierGroups
 }
@@ -9,7 +9,13 @@ type GetCurrentStoreInput = {
     storeId: string
 }
 
-export async function createModifierGroups({ storeId, data }: modifierGroupInput): Promise<ModifierGroupsOutput> {
+type UpdateModifierGroup = {
+    storeId: string,
+    modifierGroupId: string,
+    data: UpdateInputModifierGroups
+}
+
+export async function createModifierGroups({ storeId, data }: ModifierGroupInput): Promise<ModifierGroupsOutput> {
 
     const existingName = await prisma.modifierGroup.findFirst({
         where: {
@@ -89,7 +95,7 @@ export async function createModifierGroups({ storeId, data }: modifierGroupInput
     }
 }
 
-export async function getAllModifierGroups({storeId}: GetCurrentStoreInput): Promise<ModifierGroupsOutput[]>{
+export async function getAllModifierGroups({ storeId }: GetCurrentStoreInput): Promise<ModifierGroupsOutput[]> {
 
     const modifierGroup = await prisma.modifierGroup.findMany({
         where: { storeId },
@@ -119,4 +125,82 @@ export async function getAllModifierGroups({storeId}: GetCurrentStoreInput): Pro
     }))
 
     return data
+}
+
+export async function updateModifierGroup({ storeId, modifierGroupId, data }: UpdateModifierGroup): Promise<UpdateModifierGroupsOutput> {
+
+    const currentGroup = await prisma.modifierGroup.findUnique({
+        where: { id: modifierGroupId, storeId }
+    });
+
+    if (!currentGroup) {
+        throw new Error("Modifier group not found")
+    }
+
+    const nextName = data.name ?? currentGroup.name
+    const nextSurname = data.surname ?? currentGroup.surname
+
+    const nextRequired = data.required ?? currentGroup.required
+    const nextMaxSelections = data.maxSelections ?? currentGroup.maxSelections
+    const nextMinSelections = data.minSelections ?? currentGroup.minSelections
+
+    
+    const normalizedMinSelections = nextRequired ? Math.max(1, nextMinSelections) : nextMinSelections
+
+    if (nextMaxSelections < normalizedMinSelections) {
+        throw new Error("maxSelections cannot be smaller than minSelections")
+    }
+
+    const existingName = await prisma.modifierGroup.findFirst({
+        where: {
+            storeId,
+            name: nextName,
+            id: {
+                not: modifierGroupId
+            }
+        }
+    })
+
+    if (existingName && !nextSurname) {
+        throw new Error("Surname is required when a modifier group with the same name already exists")
+    }
+
+    if (nextSurname) {
+        const existingSurname = await prisma.modifierGroup.findFirst({
+            where: {
+                storeId,
+                surname: nextName,
+                id: {
+                    not: modifierGroupId
+                }
+            }
+        })
+
+        if (existingSurname) {
+            throw new Error("Surname already in use")
+        }
+    }
+
+    const modifierGroup = await prisma.modifierGroup.update({
+        where: { id: modifierGroupId, storeId },
+        data: {
+            ...data,
+            minSelections: normalizedMinSelections,
+            maxSelections: nextMaxSelections,
+            required: nextRequired
+        }
+    })
+
+    return {
+        id: modifierGroup.id,
+        name: modifierGroup.name,
+        surname: modifierGroup.surname,
+        minSelections: modifierGroup.minSelections,
+        maxSelections: modifierGroup.maxSelections,
+        required: modifierGroup.required,
+        active: modifierGroup.active,
+        displayOrder: modifierGroup.displayOrder,
+        createdAt: modifierGroup.createdAt.toISOString(),
+        updatedAt: modifierGroup.updatedAt.toISOString()
+    }
 }

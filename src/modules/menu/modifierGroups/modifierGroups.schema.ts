@@ -20,6 +20,16 @@ export const createInputModifierGroupsSchema = z.object({
     options: z.array(optionInputSchema).min(1)
 })
 
+export const updateInputModifierGroupsSchema = z.object({
+    name: z.string().min(3).optional(),
+    surname: z.string().max(50).optional(),
+    active: z.boolean().optional().optional(),
+    required: z.boolean().optional(),
+    minSelections: z.number().int().min(0).optional(),
+    maxSelections: z.number().int().min(1).optional(),
+    displayOrder: z.number().int().min(0).optional(),
+})
+
 const modifierOptionOutputSchema = z.object({
     id: z.string().uuid(),
     name: z.string(),
@@ -42,9 +52,27 @@ export const modifierGroupsOutputSchema = z.object({
     updatedAt: z.string(),
 })
 
+export const updateModifierGroupsOutputSchema = z.object({
+    id: z.string().uuid(),
+    name: z.string(),
+    surname: z.string().nullable().optional(),
+    active: z.boolean(),
+    required: z.boolean(),
+    minSelections: z.number(),
+    maxSelections: z.number(),
+    displayOrder: z.number(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+})
+
 export const modifierGroupsResponse = z.object({
     success: z.literal(true),
     data: modifierGroupsOutputSchema
+})
+
+export const updateModifierGroupsResponse = z.object({
+    success: z.literal(true),
+    data: updateModifierGroupsOutputSchema
 })
 
 export const modifierGroupsListResponse = createPaginatedResponseSchema(modifierGroupsOutputSchema)
@@ -68,8 +96,11 @@ export const linkModifierGroupSchema = z.object({
 
 export type OptionInput = z.infer<typeof optionInputSchema>
 export type CreateInputModifierGroups = z.infer<typeof createInputModifierGroupsSchema>
+export type UpdateInputModifierGroups = z.infer<typeof updateInputModifierGroupsSchema>
 export type ModifierOptionOutput = z.infer<typeof modifierOptionOutputSchema>
 export type ModifierGroupsOutput = z.infer<typeof modifierGroupsOutputSchema>
+export type UpdateModifierGroupsOutput = z.infer<typeof updateModifierGroupsOutputSchema>
+export type UpdateModifierGroupsResponse = z.infer<typeof updateModifierGroupsResponse>
 export type ModifierGroups = z.infer<typeof modifierGroupsResponse>
 export type ModifierGroupsListResponse = z.infer<typeof modifierGroupsListResponse>
 export type ModifierGroupsArrayResponse = z.infer<typeof modifierGroupsArrayResponseSchema>
