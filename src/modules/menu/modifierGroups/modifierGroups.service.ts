@@ -104,6 +104,7 @@ export async function getAllModifierGroups({ storeId }: GetCurrentStoreInput): P
 
     const modifierGroup = await prisma.modifierGroup.findMany({
         where: { storeId },
+        orderBy: {displayOrder: 'asc'},
         include: {
             options: true
         }
