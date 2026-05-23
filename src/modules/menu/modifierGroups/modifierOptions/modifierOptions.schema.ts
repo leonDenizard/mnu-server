@@ -1,6 +1,6 @@
 import z from "zod";
 
-const modifierOptionItemSchema = z.object({
+export const modifierOptionItemSchema = z.object({
     name: z.string().min(3),
     description: z.string().max(300).optional().nullable(),
     image: z.string().optional(),
@@ -10,17 +10,17 @@ const modifierOptionItemSchema = z.object({
     displayOrder: z.number().int().optional(),
 })
 
-const modifierOptionsInputSchema = z.object({
+export const modifierOptionsInputSchema = z.object({
     data: z.array(modifierOptionItemSchema).min(1)
 })
 
 const modifierOptionsOutputSchema = z.object({
     id: z.string().uuid(),
     name: z.string().min(3),
-    description: z.string().max(300),
-    image: z.string(),
+    description: z.string().max(300).optional().nullable(),
+    image: z.string().optional().nullable(),
     price: z.number(),
-    maxQuantity: z.number(),
+    maxQuantity: z.number().optional().nullable(),
     active: z.boolean(),
     displayOrder: z.number().int(),
     createdAt: z.string(),
@@ -42,6 +42,7 @@ export const modifierOptionsUpdateInputSchema = z.object({
     data: z.array(modifierOptionItemSchema).min(1)
 })
 
+export type ModifierOptionItem = z.infer<typeof modifierOptionItemSchema>
 export type ModifierOptionsInput = z.infer<typeof modifierOptionsInputSchema>
 export type ModifierOptionsOutput = z.infer<typeof modifierOptionsOutputSchema>
 export type ModifierOptionsResponseList = z.infer<typeof modifierOptionsResponseListSchema>

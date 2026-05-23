@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 import { createInputModifierGroupsSchema, modifierGroupsArrayResponseSchema, modifierGroupsParamsSchema, modifierGroupsResponse, updateInputModifierGroupsSchema, updateModifierGroupsResponse } from "./modifierGroups.schema";
 import { createModifierGroups, deleteModifierGroupById, getAllModifierGroups, updateModifierGroup } from "./modifierGroups.service";
 
-export default function modifierGroups(fastify: FastifyInstance){
+export default function modifierGroupsRoutes(fastify: FastifyInstance){
 
     fastify.post('/api/menu/modifier-groups', {
         preHandler: [fastify.authenticate],
