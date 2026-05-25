@@ -68,6 +68,7 @@ export async function createModifierOptions({ data, modifierGroupId, storeId }: 
 
 export async function updateBulkModifierOptions({ storeId, modifierGroupId, data }: UpdateModifierOptionsInput): Promise<ModifierOptionsOutput[]> {
 
+    
     const modifierGroup = await prisma.modifierGroup.findFirst({
         where: {
             id: modifierGroupId,
@@ -77,6 +78,20 @@ export async function updateBulkModifierOptions({ storeId, modifierGroupId, data
 
     if (!modifierGroup) {
         throw new Error("Modifier group not found")
+    }
+
+    const ids = data.map((options) => options.id)
+    const existingOptions = await prisma.modifierOption.findMany({
+        where: {
+            modifierGroupId,
+            id: {
+                in: ids
+            }
+        }
+    })
+
+    if(existingOptions.length !== ids.length){
+        throw new Error("One or more modifier options do not belong to this modifier group")
     }
 
     await prisma.$transaction(
@@ -136,7 +151,7 @@ export async function deleteBulkModifierOptions({ ids, modifierGroupId, storeId 
     })
 
     if(existingOptions.length !== ids.length){
-        throw new Error("Ids not found")
+        throw new Error("One or more modifier options do not belong to this modifier group")
     }
 
     await prisma.modifierOption.deleteMany({

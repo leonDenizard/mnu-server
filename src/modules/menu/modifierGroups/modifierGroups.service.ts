@@ -135,7 +135,7 @@ export async function getAllModifierGroups({ storeId }: GetCurrentStoreInput): P
 
 export async function updateModifierGroup({ storeId, modifierGroupId, data }: UpdateModifierGroup): Promise<UpdateModifierGroupsOutput> {
 
-    const currentGroup = await prisma.modifierGroup.findUnique({
+    const currentGroup = await prisma.modifierGroup.findFirst({
         where: { id: modifierGroupId, storeId }
     });
 
@@ -175,7 +175,7 @@ export async function updateModifierGroup({ storeId, modifierGroupId, data }: Up
         const existingSurname = await prisma.modifierGroup.findFirst({
             where: {
                 storeId,
-                surname: nextName,
+                surname: nextSurname,
                 id: {
                     not: modifierGroupId
                 }
@@ -213,7 +213,7 @@ export async function updateModifierGroup({ storeId, modifierGroupId, data }: Up
 
 export async function deleteModifierGroupById({ id, storeId }: ModifierGroupById): Promise<UpdateModifierGroupsOutput> {
 
-    const existingGroup = await prisma.modifierGroup.findUnique({
+    const existingGroup = await prisma.modifierGroup.findFirst({
         where: {id, storeId}
     })
 

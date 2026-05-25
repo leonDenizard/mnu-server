@@ -42,7 +42,7 @@ export default function modifierOptionsRoutes(fastify: FastifyInstance){
                 body: modifierOptionsBulkUpdateSchema,
                 params: modifierGroupsParamsSchema,
                 response: {
-                    201: modifierOptionsResponseListSchema
+                    200: modifierOptionsResponseListSchema
                 }
             }
     
@@ -57,7 +57,7 @@ export default function modifierOptionsRoutes(fastify: FastifyInstance){
                 modifierGroupId: params.id 
             })
     
-            reply.status(201).send({
+            reply.status(200).send({
                 success: true,
                 data: modifierOptions
             })
@@ -71,7 +71,7 @@ export default function modifierOptionsRoutes(fastify: FastifyInstance){
                 body: deleteBulkOptionsSchema,
                 params: modifierGroupsParamsSchema,
                 response: {
-                    201: deleteBulkOptionsOutputResponseSchema
+                    200: deleteBulkOptionsOutputResponseSchema
                 }
             }
     
@@ -86,7 +86,7 @@ export default function modifierOptionsRoutes(fastify: FastifyInstance){
                 modifierGroupId: params.id 
             })
     
-            reply.status(201).send({
+            reply.status(200).send({
                 success: true,
                 data: modifierOptions
             })
