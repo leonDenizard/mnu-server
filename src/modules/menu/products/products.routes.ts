@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify"
 import { querySchema } from "../../../shared/schemas/pagination"
 import { productInputSchema, productListResponseSchema, productParamsSchema, productResponseSchema } from "./products.schema"
-import { createProduct, deleteProductById, getAllProducts, getProductById, updateProduct } from "./products.service"
+import { createProduct, deleteProductById, getAllProducts, updateProduct } from "./products.service"
 
 export default function productsRoutes(fastify: FastifyInstance) {
 
