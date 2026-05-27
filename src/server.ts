@@ -20,6 +20,7 @@ import authRoutes from './modules/auth/auth.routes.js'
 import usersRoutes from './modules/users/users.routes.js'
 import storesRoutes from './modules/stores/stores.routes.js'
 import menuRoutes from './modules/menu/menu.routes.js'
+import publicMenuRoutes from './modules/public/menu/publicMenu.routes.js'
 
 const fastify = Fastify({
   logger: false
@@ -95,6 +96,7 @@ await fastify.register(authRoutes)
 await fastify.register(usersRoutes)
 await fastify.register(storesRoutes)
 await fastify.register(menuRoutes)
+await fastify.register(publicMenuRoutes)
 //await fastify.register(userRoutes, { prefix: '/api' })
 
 fastify.addHook('onClose', async () => {
