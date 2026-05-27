@@ -1,166 +1,179 @@
-# Domain — MNU (nome provisório)
+# Domain - MNU
 
-## 🎯 Objetivo do Produto
-O sistema existe para permitir que estabelecimentos tenham controle total sobre seus pedidos online sem depender de marketplaces.
+## Objetivo do produto
+O sistema existe para permitir que estabelecimentos gerenciem pedidos e cardápio com autonomia, sem depender de marketplaces como canal principal.
 
-O foco é simplicidade operacional, autonomia e estabilidade.
+O foco do MVP é:
+- operação simples
+- estabilidade
+- cardápio configurável
+- fluxo rápido para o cliente final
 
----
+## Atores principais
 
-## 👤 Atores do Sistema
-
-### Store Owner
-Dono do estabelecimento.
+### Owner
+Usuário administrador da loja.
 
 Pode:
+- configurar loja
+- gerenciar usuários
 - gerenciar cardápio
-- gerenciar as configurações do estabelecimento
-- abrir/fechar loja
-- receber pedidos
-- alterar produtos
-- editar pedidos
-- cancelar pedidos
+- abrir e fechar loja
+- configurar adicionais
 
-Não pode:
-- acessar dados de outras lojas
+### Staff
+Usuário operacional da loja.
 
----
+Pode:
+- acessar recursos permitidos pela loja
+- operar funcionalidades do dia a dia conforme regras futuras de permissão
 
 ### Customer
-Cliente final que realiza pedidos.
+Cliente final.
 
 Regras:
-- não precisa criar conta
-- deve conseguir pedir em menos de 1 minuto
-- experiência mobile-first
+- não precisa autenticação no MVP
+- acessa cardápio público por slug da loja
+- deve conseguir montar pedido com poucos passos
 
----
+## Regra central de tenancy
+O sistema é multi-tenant por loja.
 
-## Entidade Central (Aggregate Root)
+Regra obrigatória:
+- o client nunca informa `storeId` em rotas administrativas
+- o `storeId` vem do contexto autenticado
+- toda operação administrativa deve validar o escopo da loja
 
-### Store
+Observação:
+- nem toda tabela precisa ter `storeId` físico no banco
+- se uma entidade pertence indiretamente à loja por relacionamento, a validação ainda é obrigatória
 
-Toda entidade do sistema DEVE pertencer a uma Store.
+Exemplo:
+- `ModifierOption` não tem `storeId`, mas pertence a `ModifierGroup`, que pertence à `Store`
 
-Exemplos:
-- Products pertencem a uma Store
-- Categories pertencem a uma Store
-- Orders pertencem a uma Store
-- Users pertencem a uma Store
+## Autenticação
 
+### JWT
+O token carrega apenas o contexto mínimo:
+- `sub`
+- `storeId`
+- `role`
 
-⚠️ REGRA CRÍTICA:
-Nenhuma query deve acessar dados sem filtrar por `storeId`.
+### Regras
+- `request.user.storeId` é a fonte de verdade da loja autenticada
+- `request.user.sub` identifica o usuário autenticado
 
----
+## Loja
 
-## 🍔 Cardápio
+### Conceito
+`Store` representa a loja/estabelecimento.
 
-Estrutura:
+Hoje a loja concentra:
+- identidade
+- contato
+- endereço
+- modos de atendimento
+- status operacional
 
-Store
- └── Categories
-       └── Items
-            └── modifierGroups (Grupo de adicionais)
-                        └── Modifier
+### Estado operacional
+No estado atual do projeto:
+- `isOpen` representa se a loja está aberta
+- horários de funcionamento existem como agenda de referência
 
-Regras:
+## Horários de funcionamento
 
-- Produto pode ser ativado/desativado
-- Produto indisponível não aparece para o cliente ou UI trata como "grayscale"
-- Categoria vazia não deve ser exibida
-- Ordem de exibição deve ser configurável
+### Modelagem
+`StoreOperatingHour` guarda intervalos por dia da semana.
 
-Regras das Categorias.
-- Uma categoria é única
-- Os modifierGroups devem ter min max configurável
-- As categorias precisam ter um channel pra facilitar a exibição no futuro por diferentes canais de vendas
-- As categorias precisam ter um schedule de exibição mesmo que não sejam implementados no momento.
-- ModifierGroups e Modifiers pertencem exclusivamente ao Product.
-- O sistema permite duplicação para acelerar a configuração, evitando compartilhamento entre produtos no MVP.
+Cada linha representa:
+- uma loja
+- um dia da semana
+- um intervalo de funcionamento
 
----
+Isso permite:
+- múltiplos períodos por dia
+- almoço e jantar separados
 
-## 🧾 Pedidos
+## Cardápio administrativo
 
-Regras iniciais:
+### Category
+Categoria pertence à loja.
 
-- Pedido só pode ser criado se a loja estiver aberta
-- Pedido não pode ser vazio
-- Preço do pedido deve ser congelado no momento da compra
-  (mudanças futuras no produto NÃO afetam pedidos antigos)
-- Somente o Owner do restaurante pode editar um pedido.
-- Pedidos finalizados não podem voltar pra produção.
-- Os pedidos precisam ser finalizados após 8 horas se ficarem sem movimentação
-- Pedidos editados, movimentados, finalizados pelo usuário precisam guardar o id do owner ou funcionário e updateTime, para rastreabilidade
+Regras atuais:
+- `title` único por loja
+- `displayOrder` controla ordem visual
+- `showInMenu`, `showInPos` e `showInWaiter` definem visibilidade por canal
 
-Status iniciais:
+### Product
+Produto pertence à loja e a uma categoria.
 
-- PENDING
-- ACCEPTED
-- PREPARING
-- READY
-- CANCELED
-- FINISHED
+Regras atuais:
+- produto pode estar ativo ou inativo
+- ordenação por `displayOrder`
+- preço promocional é opcional
 
----
+### ModifierGroup
+Grupo de adicionais pertence à loja, não ao produto.
 
-## 🔐 Multi-Tenant
+Decisão importante:
+- grupos são reutilizáveis entre produtos da mesma loja
 
-O sistema é multi-tenant por `storeId`.
+Regras atuais:
+- `surname` é identificador interno opcional
+- se já existir grupo com mesmo `name` na loja, `surname` passa a ser necessário
+- `required`, `minSelections` e `maxSelections` governam a regra de seleção
 
-Regras obrigatórias:
+### ModifierOption
+Opção pertence a um `ModifierGroup`.
 
-- Toda tabela deve ter `storeId`
-- Toda busca deve filtrar por `storeId`
-- Nunca confiar em `storeId` vindo do client
-- Extrair store do contexto autenticado
+Regras atuais:
+- preço padrão pode ser zero
+- opção pode ter `maxQuantity`
+- criação, update e delete podem acontecer em lote
 
-Falha nessa regra = vazamento de dados (erro crítico).
+### ProductModifierGroup
+Tabela de associação entre produto e grupo de adicional.
 
----
+Regras atuais:
+- um grupo pode ser reutilizado em vários produtos
+- o mesmo grupo não pode ser vinculado duas vezes ao mesmo produto
+- isso é garantido por `@@unique([productId, modifierGroupId])`
 
-## 🚫 Não Objetivos do MVP
+## Cardápio público
 
-Para evitar escopo infinito, o sistema NÃO deve ter inicialmente:
+### Identificação
+O cardápio público é acessado por `slug` da loja.
 
-- relatórios avançados
-- CRM
-- cupons
-- programa de fidelidade
-- split de pagamento
-- integrações complexas
-- chatbot
-- automações
+### Regra de exposição
+O payload público deve expor apenas o necessário para montagem do pedido.
 
-Se não ajuda a loja a vender hoje → não entra.
+Em geral, o cardápio público inclui:
+- dados básicos da loja
+- categorias visíveis
+- produtos ativos
+- grupos ativos vinculados ao produto
+- opções ativas do grupo
 
----
+## Convenções de modelagem da API
 
-## 🧭 Princípios de Arquitetura
+### Admin
+- schemas administrativos podem conter mais dados de gestão
+- `storeId` nunca vem do body do client
 
-- Preferir simplicidade a flexibilidade prematura
-- Evitar overengineering
-- Controllers devem ser finos
-- Services contêm regras de negócio
-- Prisma é a fonte da verdade dos modelos
+### Public
+- schemas públicos devem ser mais enxutos
+- evitar expor campos administrativos quando a própria filtragem já garante o estado
 
----
+## Princípios atuais de implementação
+- routes finas
+- services concentram regras de negócio
+- Zod define contratos HTTP
+- Prisma é a fonte de verdade da modelagem
+- preferir simplicidade antes de abstrações mais pesadas
 
-## ⚠️ Decisões Técnicas Importantes
-
-- Preços armazenados em centavos (inteiro)
-- Soft delete apenas se houver necessidade real
-- Slug da loja deve ser único
-- Sistema deve funcionar bem em conexões móveis lentas
-
----
-
-## 💡 Filosofia do Produto
-
-Este software prioriza:
-
-1. Velocidade operacional
-2. Facilidade de uso
-3. Estabilidade
-4. Autonomia do estabelecimento
+## Próximo domínio natural
+Pedidos públicos e operacionais:
+- criação de pedido
+- snapshot de preço
+- validação de loja aberta
+- histórico do cliente em módulo público separado
