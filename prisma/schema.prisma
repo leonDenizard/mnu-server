@@ -73,6 +73,7 @@ model Store {
   products       Product[]
   operatingHours StoreOperatingHour[]
   modifierGroups ModifierGroup[]
+  orders         Order[]
 }
 
 /// =================
@@ -113,8 +114,9 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  storeId String
-  store   Store  @relation(fields: [storeId], references: [id])
+  storeId              String
+  store                Store                @relation(fields: [storeId], references: [id])
+  orderStatusHistories OrderStatusHistory[]
 
   @@unique([email, storeId])
   @@index([storeId])
@@ -197,7 +199,7 @@ model ModifierOption {
   name         String
   description  String?
   image        String?
-  price        Decimal  @db.Decimal(10, 2) @default(0)
+  price        Decimal  @default(0) @db.Decimal(10, 2)
   maxQuantity  Int?
   active       Boolean  @default(true)
   displayOrder Int      @default(0)
@@ -224,4 +226,135 @@ model ProductModifierGroup {
   @@unique([productId, modifierGroupId])
   @@index([productId])
   @@index([modifierGroupId])
+}
+
+/// =================
+/// STORE Orders
+/// =================
+
+enum ServiceType {
+  DELIVERY
+  PICKUP
+  DINE_IN
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  IN_PREPARATION
+  READY
+  CANCELED
+  FINISHED
+}
+
+enum PaymentMethod {
+  PIX
+  CASH
+  CARD
+  OTHER
+}
+
+model Order {
+  id                    String               @id @default(uuid())
+  storeId               String
+  orderNumber           Int
+  sequenceKey           String
+  customerName          String?
+  customerPhone         String?
+  serviceType           ServiceType
+  paymentMethod         PaymentMethod
+  paymentDetail         String?
+  status                OrderStatus          @default(PENDING)
+  subtotal              Decimal
+  deliveryFee           Decimal              @default(0)
+  discount              Decimal              @default(0)
+  couponCode            String?
+  total                 Decimal
+  noteOrder             String?
+  cancellationReason    String?
+  printedAt             DateTime?
+  deliveryAddressLine   String?
+  deliveryAddressNumber String?
+  deliveryNeighborhood  String?
+  deliveryCity          String?
+  deliveryState         String?
+  deliveryZipCode       String?
+  deliveryComplement    String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  store                 Store                @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderItems            OrderItem[]
+  orderStatusHistories  OrderStatusHistory[]
+
+  @@unique([storeId, sequenceKey, orderNumber])
+  @@index([storeId, createdAt])
+  @@index([storeId, status, createdAt])
+}
+
+model OrderItem {
+  id                  String                    @id @default(uuid())
+  orderId             String
+  productId           String
+  productNameSnapshot String
+  unitPrice           Decimal
+  quantity            Int
+  total               Decimal
+  noteItem            String?
+  order               Order                     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  modifierGroups      OrderItemModifierGroup[]
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model OrderItemModifierGroup {
+  id                String                      @id @default(uuid())
+  orderItemId       String
+  modifierGroupId   String?
+  groupNameSnapshot String
+  required          Boolean
+  minSelections     Int
+  maxSelections     Int
+  displayOrder      Int?
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+
+  orderItem         OrderItem                   @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  options           OrderItemModifierOption[]
+
+  @@index([orderItemId])
+  @@index([modifierGroupId])
+}
+
+model OrderItemModifierOption {
+  id                          String                      @id @default(uuid())
+  orderItemModifierGroupId     String
+  modifierOptionId             String?
+  optionNameSnapshot           String
+  optionPriceSnapshot          Decimal
+  quantity                     Int                         @default(1)
+  displayOrder                 Int?
+  createdAt                    DateTime                    @default(now())
+  updatedAt                    DateTime                    @updatedAt
+
+  modifierGroup                OrderItemModifierGroup      @relation(fields: [orderItemModifierGroupId], references: [id], onDelete: Cascade)
+
+  @@index([orderItemModifierGroupId])
+  @@index([modifierOptionId])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(uuid())
+  orderId   String
+  status    OrderStatus
+  userId    String
+  reason    String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
 }
