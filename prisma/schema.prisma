@@ -273,8 +273,8 @@ model Order {
   noteOrder             String?
   cancellationReason    String?
   printedAt             DateTime?
-  deliveryAddressLine   String?
-  deliveryAddressNumber String?
+  deliveryStreet        String?
+  deliveryAddressNumber Int?
   deliveryNeighborhood  String?
   deliveryCity          String?
   deliveryState         String?
@@ -292,7 +292,7 @@ model Order {
 }
 
 model OrderItem {
-  id                  String                    @id @default(uuid())
+  id                  String  @id @default(uuid())
   orderId             String
   productId           String
   productNameSnapshot String
@@ -300,16 +300,16 @@ model OrderItem {
   quantity            Int
   total               Decimal
   noteItem            String?
-  order               Order                     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order               Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  modifierGroups      OrderItemModifierGroup[]
+  modifierGroups OrderItemModifierGroup[]
 
   @@index([orderId])
   @@index([productId])
 }
 
 model OrderItemModifierGroup {
-  id                String                      @id @default(uuid())
+  id                String   @id @default(uuid())
   orderItemId       String
   modifierGroupId   String?
   groupNameSnapshot String
@@ -317,28 +317,28 @@ model OrderItemModifierGroup {
   minSelections     Int
   maxSelections     Int
   displayOrder      Int?
-  createdAt         DateTime                    @default(now())
-  updatedAt         DateTime                    @updatedAt
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  orderItem         OrderItem                   @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
-  options           OrderItemModifierOption[]
+  orderItem OrderItem                 @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  options   OrderItemModifierOption[]
 
   @@index([orderItemId])
   @@index([modifierGroupId])
 }
 
 model OrderItemModifierOption {
-  id                          String                      @id @default(uuid())
-  orderItemModifierGroupId     String
-  modifierOptionId             String?
-  optionNameSnapshot           String
-  optionPriceSnapshot          Decimal
-  quantity                     Int                         @default(1)
-  displayOrder                 Int?
-  createdAt                    DateTime                    @default(now())
-  updatedAt                    DateTime                    @updatedAt
+  id                       String   @id @default(uuid())
+  orderItemModifierGroupId String
+  modifierOptionId         String?
+  optionNameSnapshot       String
+  optionPriceSnapshot      Decimal
+  quantity                 Int      @default(1)
+  displayOrder             Int?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 
-  modifierGroup                OrderItemModifierGroup      @relation(fields: [orderItemModifierGroupId], references: [id], onDelete: Cascade)
+  modifierGroup OrderItemModifierGroup @relation(fields: [orderItemModifierGroupId], references: [id], onDelete: Cascade)
 
   @@index([orderItemModifierGroupId])
   @@index([modifierOptionId])
