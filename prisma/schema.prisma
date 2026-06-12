@@ -358,3 +358,13 @@ model OrderStatusHistory {
 
   @@index([orderId, createdAt])
 }
+
+model OrderSequence {
+  id          String @id @default(uuid())
+  storeId     String
+  sequenceKey String
+
+  current Int @default(0)
+
+  @@unique([storeId, sequenceKey])
+}
