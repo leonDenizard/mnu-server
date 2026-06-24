@@ -1,4 +1,4 @@
-import { Prisma } from "../../generated/prisma"
+import { Prisma } from "../../generated/prisma/index.js"
 
 
 type ResolveOrderNumberInput = {
@@ -7,7 +7,7 @@ type ResolveOrderNumberInput = {
   tx: Prisma.TransactionClient
 }
 
-export async function resolveOrderNumber({ storeId, sequenceKey, tx}: ResolveOrderNumberInput){
+export async function resolveOrderNumber({ storeId, sequenceKey, tx }: ResolveOrderNumberInput) {
 
     const sequence = await tx.orderSequence.upsert({
       where: {

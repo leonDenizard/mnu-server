@@ -22,6 +22,11 @@ enum StoreStatus {
   BLOCKED
 }
 
+enum OrderSequenceMode {
+  DAILY
+  CONTINUOUS
+}
+
 enum Weekday {
   SUNDAY
   MONDAY
@@ -33,13 +38,14 @@ enum Weekday {
 }
 
 model Store {
-  id           String       @id @default(uuid())
-  name         String
-  slug         String       @unique @db.Citext()
-  document     String       @unique
-  documentType DocumentType
-  legalName    String?
-  status       StoreStatus  @default(ACTIVE)
+  id                String            @id @default(uuid())
+  name              String
+  slug              String            @unique @db.Citext()
+  document          String            @unique
+  documentType      DocumentType
+  legalName         String?
+  status            StoreStatus       @default(ACTIVE)
+  orderSequenceMode OrderSequenceMode @default(CONTINUOUS)
 
   phone    String?
   whatsapp String?
@@ -74,6 +80,7 @@ model Store {
   operatingHours StoreOperatingHour[]
   modifierGroups ModifierGroup[]
   orders         Order[]
+  orderSequences OrderSequence[]
 }
 
 /// =================
@@ -366,5 +373,8 @@ model OrderSequence {
 
   current Int @default(0)
 
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
   @@unique([storeId, sequenceKey])
+  @@index([storeId])
 }
