@@ -92,7 +92,7 @@ type BuiltOrderPayload = {
 }
 
 function toDecimal(value: number | string | Prisma.Decimal) {
-  return new Prisma.Decimal(value)
+  return new Prisma.Decimal(value).toDecimalPlaces(2)
 }
 
 function validateDeliveryAddress(data: CreateOrderInput) {
