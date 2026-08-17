@@ -1,8 +1,18 @@
 import { hash } from "bcryptjs"
 import { generateSlug } from "../../utils/slug"
 import prisma from "../../database"
-import { Prisma } from "@prisma/client"
+import { Prisma } from "../../../generated/prisma/index.js"
 import type { OnboardingInput } from './onboarding.schema'
+import type { AuthUser } from '../auth/auth.schema'
+
+type OnboardingServiceResult = {
+    store: {
+        id: string
+        name: string
+        slug: string
+    }
+    user: AuthUser
+}
 
 async function generateUniqueSlug(baseSlug: string){
     let slug = baseSlug
@@ -23,7 +33,7 @@ async function generateUniqueSlug(baseSlug: string){
 }
 
 
-export async function onboardingService(data: OnboardingInput){
+export async function onboardingService(data: OnboardingInput): Promise<OnboardingServiceResult> {
 
    const {
     storeName,
@@ -71,7 +81,9 @@ export async function onboardingService(data: OnboardingInput){
             name: operation.user.name,
             email: operation.user.email,
             role: operation.user.role,
-            storeId: operation.user.storeId
+            storeId: operation.user.storeId,
+            slug: operation.store.slug,
+            storeName: operation.store.name
         }
     }
   } catch (error) {

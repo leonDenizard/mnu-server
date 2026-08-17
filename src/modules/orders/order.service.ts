@@ -116,6 +116,59 @@ function validateDeliveryAddress(data: CreateOrderInput) {
   }
 }
 
+function validateUniqueSelections(data: CreateOrderInput) {
+  for (const item of data.items) {
+    const modifierGroupIds = new Set<string>()
+
+    for (const group of item.orderModifierGroups) {
+      if (modifierGroupIds.has(group.modifierGroupId)) {
+        throw new Error(`Modifier group "${group.modifierGroupId}" cannot be selected more than once`)
+      }
+
+      modifierGroupIds.add(group.modifierGroupId)
+
+      const modifierOptionIds = new Set<string>()
+
+      for (const option of group.options) {
+        if (modifierOptionIds.has(option.modifierOptionId)) {
+          throw new Error(`Modifier option "${option.modifierOptionId}" cannot be selected more than once`)
+        }
+
+        modifierOptionIds.add(option.modifierOptionId)
+      }
+    }
+  }
+}
+
+function validateStoreCanReceiveOrder(
+  store: {
+    status: "ACTIVE" | "SUSPENDED" | "BLOCKED"
+    isOpen: boolean
+    supportsDelivery: boolean
+    supportsPickup: boolean
+    supportsDineIn: boolean
+  },
+  serviceType: CreateOrderInput["serviceType"]
+) {
+  if (store.status !== "ACTIVE") {
+    throw new Error("Store is not active")
+  }
+
+  if (!store.isOpen) {
+    throw new Error("Store is closed")
+  }
+
+  const serviceTypeEnabled = {
+    DELIVERY: store.supportsDelivery,
+    PICKUP: store.supportsPickup,
+    DINE_IN: store.supportsDineIn
+  }[serviceType]
+
+  if (!serviceTypeEnabled) {
+    throw new Error(`Service type "${serviceType}" is not available for this store`)
+  }
+}
+
 async function loadProductForOrder({
   tx,
   storeId,
@@ -239,6 +292,21 @@ async function buildOrderItemPayload({
   const linkedGroupsById = new Map(
     product.modifierGroups.map((link) => [link.modifierGroupId, link.modifierGroup] as const)
   )
+
+  const selectedGroupIds = new Set(
+    item.orderModifierGroups.map((group) => group.modifierGroupId)
+  )
+
+  const missingRequiredGroup = product.modifierGroups.find(({ modifierGroup }) => {
+    const requiresSelection = modifierGroup.required || modifierGroup.minSelections > 0
+    return requiresSelection && !selectedGroupIds.has(modifierGroup.id)
+  })
+
+  if (missingRequiredGroup) {
+    throw new Error(
+      `Modifier group "${missingRequiredGroup.modifierGroup.name}" requires a selection`
+    )
+  }
 
   const modifierGroups = item.orderModifierGroups.map((groupSelection) => {
     const linkedGroup = linkedGroupsById.get(groupSelection.modifierGroupId)
@@ -380,12 +448,18 @@ export async function createOrder({
   data
 }: CreateOrderServiceInput): Promise<OrderOutput> {
   validateDeliveryAddress(data)
+  validateUniqueSelections(data)
 
   const store = await prisma.store.findFirst({
     where: {
       id: storeId
     },
     select: {
+      status: true,
+      isOpen: true,
+      supportsDelivery: true,
+      supportsPickup: true,
+      supportsDineIn: true,
       orderSequenceMode: true,
       deliveryFeeCents: true
     }
@@ -394,6 +468,8 @@ export async function createOrder({
   if (!store) {
     throw new Error("Store not found")
   }
+
+  validateStoreCanReceiveOrder(store, data.serviceType)
 
   const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const payload = await buildOrderPayload({

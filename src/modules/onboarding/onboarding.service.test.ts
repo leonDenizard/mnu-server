@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { Prisma } from '../../../generated/prisma/index.js'
 import { hash } from 'bcryptjs'
 
 import prisma from '../../database'
@@ -103,7 +103,11 @@ describe('onboardingService', () => {
     })
     expect(result).toEqual({
       store: createdStore,
-      user: createdUser
+      user: {
+        ...createdUser,
+        slug: createdStore.slug,
+        storeName: createdStore.name
+      }
     })
   })
 
