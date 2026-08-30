@@ -1,5 +1,6 @@
 import prisma from "../../../database"
 import { LinkedModifierGroupOutput } from "./productModifierGroup.schemas"
+import { ConflictError, NotFoundError } from '../../../shared/errors/app-error'
 
 type GetCurrentInputStore = {
     storeId: string,
@@ -21,7 +22,7 @@ export async function linkModifierGroupInProduct({ modifierGroupId, productId, s
     })
 
     if (!modifierExists) {
-        throw new Error("Modifier group not found in store")
+        throw new NotFoundError("Modifier group not found in store")
     }
 
     const productExists = await prisma.product.findFirst({
@@ -31,7 +32,7 @@ export async function linkModifierGroupInProduct({ modifierGroupId, productId, s
     })
 
     if (!productExists) {
-        throw new Error("Product not found in store")
+        throw new NotFoundError("Product not found in store")
     }
 
     const linkedExists = await prisma.productModifierGroup.findFirst({
@@ -39,7 +40,7 @@ export async function linkModifierGroupInProduct({ modifierGroupId, productId, s
     })
 
     if (linkedExists) {
-        throw new Error("Group is already exist on product")
+        throw new ConflictError("Modifier group is already linked to product")
     }
 
     await prisma.productModifierGroup.create({
@@ -91,7 +92,7 @@ export async function removeModifierGroupInProduct({ modifierGroupId, productId,
     })
 
     if (!modifierExists) {
-        throw new Error("Modifier group not found in store")
+        throw new NotFoundError("Modifier group not found in store")
     }
 
     const productExists = await prisma.product.findFirst({
@@ -101,7 +102,7 @@ export async function removeModifierGroupInProduct({ modifierGroupId, productId,
     })
 
     if (!productExists) {
-        throw new Error("Product not found in store")
+        throw new NotFoundError("Product not found in store")
     }
 
     const linkedExists = await prisma.productModifierGroup.findFirst({
@@ -109,7 +110,7 @@ export async function removeModifierGroupInProduct({ modifierGroupId, productId,
     })
 
     if (!linkedExists) {
-        throw new Error("Group not found on product")
+        throw new NotFoundError("Modifier group is not linked to product")
     }
 
     await prisma.productModifierGroup.delete({
@@ -159,7 +160,7 @@ export async function getAllProductModifierGroup({ productId, storeId }: GetProd
     })
 
     if (!productExists) {
-        throw new Error("Product not found in store")
+        throw new NotFoundError("Product not found in store")
     }
 
 

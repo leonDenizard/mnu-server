@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { errorResponseSchema } from '../../shared/schemas/response'
 
 
 export const loginSchema = z.object({
@@ -32,10 +33,7 @@ export const loginResponseSchema = z.object({
     })
 })
 
-export const authErrorResponseSchema = z.object({
-  success: z.literal(false),
-  error: z.string()
-})
+export const authErrorResponseSchema = errorResponseSchema
 
 export type LoginResult = {
   user: AuthUser

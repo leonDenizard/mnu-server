@@ -75,6 +75,42 @@ Regra:
 }
 ```
 
+### Erro
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Resource not found"
+  }
+}
+```
+
+Erros de validação podem incluir detalhes seguros:
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": [
+      {
+        "path": "email",
+        "message": "Invalid email"
+      }
+    ]
+  }
+}
+```
+
+Códigos HTTP usados:
+- `400` para entrada ou regra inválida
+- `401` para autenticação ausente ou inválida
+- `403` para operação não permitida
+- `404` para recurso não encontrado
+- `409` para duplicidade ou conflito com o estado atual
+- `500` somente para falhas inesperadas, sem expor detalhes internos
+
 ## Convenções de update
 
 ### Update parcial

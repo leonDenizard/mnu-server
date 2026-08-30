@@ -1,5 +1,6 @@
 import prisma from "../../../database"
 import { ProductInput, ProductOutput } from "./products.schema"
+import { BadRequestError, NotFoundError } from '../../../shared/errors/app-error'
 
 type GetCurretProductStoreInput = {
     storeId: string,
@@ -82,7 +83,7 @@ export async function getProductById({ storeId, productId }: ProductById): Promi
     })
 
     if(!product){
-        throw new Error("Product not found") 
+        throw new NotFoundError("Product not found")
     }
     
     return {
@@ -111,7 +112,7 @@ export async function createProduct({ categoryId, storeId, data }: GetCurretProd
     })
 
     if (!category) {
-        throw new Error("Category not found!")
+        throw new NotFoundError("Category not found")
     }
 
     const product = await prisma.product.create({
@@ -154,7 +155,7 @@ export async function updateProduct({ data, productId, storeId }: UpdateCurretPr
     })
 
     if (!existingProduct) {
-        throw new Error("Product not found")
+        throw new NotFoundError("Product not found")
     }
 
     const product = await prisma.product.update({
@@ -165,7 +166,7 @@ export async function updateProduct({ data, productId, storeId }: UpdateCurretPr
     })
 
     if (!product) {
-        throw new Error("Not found product")
+        throw new NotFoundError("Product not found")
     }
 
     return {
@@ -194,11 +195,11 @@ export async function deleteProductById({ productId, storeId }: ProductById): Pr
     })
 
     if (!existingProduct) {
-        throw new Error("Product not found")
+        throw new NotFoundError("Product not found")
     }
 
     if (!productId) {
-        throw new Error("ID product invalid or empty")
+        throw new BadRequestError("Product id is invalid or empty")
     }
 
     const product = await prisma.product.delete({

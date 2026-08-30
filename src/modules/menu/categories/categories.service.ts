@@ -1,5 +1,6 @@
 import prisma from "../../../database"
 import { CategoryInput, CategoryOutput } from "./categories.schema"
+import { ConflictError, NotFoundError } from '../../../shared/errors/app-error'
 
 type GetCurrentStoreInput = {
     storeId: string,
@@ -104,7 +105,7 @@ export async function updateCategory({ id, data, storeId}: UpdateCategoryById): 
     })
     
     if(exists){
-        throw new Error ("A category with this name already exists")
+        throw new ConflictError("A category with this name already exists")
     }
 
     const category = await prisma.category.update({
@@ -115,7 +116,7 @@ export async function updateCategory({ id, data, storeId}: UpdateCategoryById): 
     
 
     if(!category){
-        throw new Error ("Not found categories on store")
+        throw new NotFoundError("Category not found in store")
     }
 
     return{
@@ -138,7 +139,7 @@ export async function deleteCategoryByID({id}: DeleteCategoryById): Promise<Cate
     })
 
     if(!existsCategory){
-        throw new Error("Not found Category")
+        throw new NotFoundError("Category not found")
     }
 
     const category = await prisma.category.delete({

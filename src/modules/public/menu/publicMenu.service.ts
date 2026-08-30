@@ -1,5 +1,6 @@
 import prisma from "../../../database"
 import { PublicMenuStore } from "./publicMenu.schema"
+import { NotFoundError } from '../../../shared/errors/app-error'
 
 type Slug = {
     slug: string
@@ -54,7 +55,7 @@ export async function fetchPublicMenuFromDb(slug: string): Promise<PublicMenuSto
     })
 
     if (!store) {
-        throw new Error("Store not found")
+        throw new NotFoundError("Store not found")
     }
 
     return {

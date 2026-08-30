@@ -4,6 +4,7 @@ import prisma from "../../database"
 import { Prisma } from "../../../generated/prisma/index.js"
 import type { OnboardingInput } from './onboarding.schema'
 import type { AuthUser } from '../auth/auth.schema'
+import { ConflictError } from '../../shared/errors/app-error'
 
 type OnboardingServiceResult = {
     store: {
@@ -89,7 +90,7 @@ export async function onboardingService(data: OnboardingInput): Promise<Onboardi
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2002") {
-        throw new Error("Conflito de dados únicos")
+        throw new ConflictError("Conflito de dados únicos")
       }
     }
 

@@ -1,5 +1,6 @@
 import prisma from "../../../database"
 import { CreateInputModifierGroups, ModifierGroupsOutput, UpdateInputModifierGroups, UpdateModifierGroupsOutput } from "./modifierGroups.schema"
+import { BadRequestError, ConflictError, NotFoundError } from '../../../shared/errors/app-error'
 
 type ModifierGroupInput = {
     storeId: string,
@@ -30,7 +31,7 @@ export async function createModifierGroups({ storeId, data }: ModifierGroupInput
     })
 
     if (existingName && !data.surname) {
-        throw new Error("Surname is required when a modifier group with the same name already exists")
+        throw new BadRequestError("Surname is required when a modifier group with the same name already exists")
     }
 
     if (data.surname) {
@@ -42,7 +43,7 @@ export async function createModifierGroups({ storeId, data }: ModifierGroupInput
         })
 
         if (existingSurname) {
-            throw new Error("Surname already in use")
+            throw new ConflictError("Surname already in use")
         }
     }
 
@@ -51,7 +52,7 @@ export async function createModifierGroups({ storeId, data }: ModifierGroupInput
     const minSelections = required ? 1 : data.minSelections
 
     if (data.maxSelections < minSelections) {
-        throw new Error("Field maxSelections cannot be smaller than the minSelections")
+        throw new BadRequestError("Field maxSelections cannot be smaller than the minSelections")
     }
 
     const modifierGroup = await prisma.modifierGroup.create({
@@ -140,7 +141,7 @@ export async function updateModifierGroup({ storeId, modifierGroupId, data }: Up
     });
 
     if (!currentGroup) {
-        throw new Error("Modifier group not found")
+        throw new NotFoundError("Modifier group not found")
     }
 
     const nextName = data.name ?? currentGroup.name
@@ -154,7 +155,7 @@ export async function updateModifierGroup({ storeId, modifierGroupId, data }: Up
     const normalizedMinSelections = nextRequired ? Math.max(1, nextMinSelections) : nextMinSelections
 
     if (nextMaxSelections < normalizedMinSelections) {
-        throw new Error("maxSelections cannot be smaller than minSelections")
+        throw new BadRequestError("maxSelections cannot be smaller than minSelections")
     }
 
     const existingName = await prisma.modifierGroup.findFirst({
@@ -168,7 +169,7 @@ export async function updateModifierGroup({ storeId, modifierGroupId, data }: Up
     })
 
     if (existingName && !nextSurname) {
-        throw new Error("Surname is required when a modifier group with the same name already exists")
+        throw new BadRequestError("Surname is required when a modifier group with the same name already exists")
     }
 
     if (nextSurname) {
@@ -183,7 +184,7 @@ export async function updateModifierGroup({ storeId, modifierGroupId, data }: Up
         })
 
         if (existingSurname) {
-            throw new Error("Surname already in use")
+            throw new ConflictError("Surname already in use")
         }
     }
 
@@ -218,7 +219,7 @@ export async function deleteModifierGroupById({ id, storeId }: ModifierGroupById
     })
 
     if(!existingGroup){
-        throw new Error("Modifier Group not found")
+        throw new NotFoundError("Modifier group not found")
     }
 
     const modifierGroup = await prisma.modifierGroup.delete({

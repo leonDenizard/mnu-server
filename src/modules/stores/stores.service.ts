@@ -1,5 +1,6 @@
 import prisma from "../../database"
 import { StoreOutput, UpdateStore, StoreOperatingHourInput, StoreOperatingHourOutput, OperatingHoursByDay } from "./stores.schema"
+import { BadRequestError, ConflictError, NotFoundError } from '../../shared/errors/app-error'
 
 type GetCurrentStoreInput = {
     storeId: string
@@ -35,7 +36,7 @@ export async function getCurrentStore({ storeId }: GetCurrentStoreInput): Promis
     })
 
     if (!store) {
-        throw new Error('Store not found')
+        throw new NotFoundError('Store not found')
     }
 
     return {
@@ -155,7 +156,7 @@ export async function createOperatingHour({ storeId, data }: CreateStoreOperatin
     })
 
     if (data.openTime >= data.closeTime) {
-        throw new Error('Open time must be before close time')
+        throw new BadRequestError('Open time must be before close time')
     }
 
     const duplicated = existingHour.some((hour) => {
@@ -163,7 +164,7 @@ export async function createOperatingHour({ storeId, data }: CreateStoreOperatin
     })
 
     if (duplicated) {
-        throw new Error('The registered schedule already exists.')
+        throw new ConflictError('The registered schedule already exists')
     }
 
     const hasOverlap = existingHour.some((hour) =>
@@ -172,7 +173,7 @@ export async function createOperatingHour({ storeId, data }: CreateStoreOperatin
     )
 
     if (hasOverlap) {
-        throw new Error('Time slot cannot be used.')
+        throw new ConflictError('Time slot overlaps an existing operating hour')
     }
 
 
@@ -245,15 +246,15 @@ export async function deleteHourById({ storeId, id }: DeleteHourByIdInput): Prom
     const hourIsStore = await prisma.storeOperatingHour.findFirst({
         where: { storeId, id }
     })
+    if (!hourIsStore) {
+        throw new NotFoundError('Operating hour not found')
+    }
+
     await prisma.storeOperatingHour.delete({
         where: {
             id
         }
     })
-
-    if (!hourIsStore) {
-        throw new Error('Operating hour not found')
-    }
 
     const hours = await prisma.storeOperatingHour.findMany({
         where: { storeId },

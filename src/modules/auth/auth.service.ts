@@ -2,21 +2,15 @@ import { compare } from 'bcryptjs'
 
 import prisma from '../../database.js'
 import { JwtPayload, LoginInput, LoginResult, TokenUser } from './auth.schema.js'
+import { ForbiddenError, NotFoundError, UnauthorizedError } from '../../shared/errors/app-error.js'
 
-export class InvalidCredentialsError extends Error {
+export class InvalidCredentialsError extends UnauthorizedError {
   constructor() {
     super('Invalid Credentials')
     this.name = 'InvalidCredentialsError'
   }
 }
-export class UserNotFoundError extends Error {
-  constructor() {
-    super('User not found')
-    this.name = 'UserNotFoundError'
-  }
-}
-
-export class InactiveUserError extends Error {
+export class InactiveUserError extends ForbiddenError {
   constructor() {
     super('Inactive user')
     this.name = 'InactiveUserError'
@@ -38,7 +32,7 @@ export async function login({ email, password }: LoginInput): Promise<LoginResul
   })
 
   if (!store) {
-    throw new Error('Store not found for user')
+    throw new NotFoundError('Store not found for user')
   }
 
   const passwordIsValid = await compare(password, user.passwordHash)

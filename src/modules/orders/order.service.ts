@@ -8,6 +8,7 @@ import {
   OrderItemModifierGroupInput,
   OrderOutput,
 } from "./order.schema"
+import { BadRequestError, ConflictError, NotFoundError } from '../../shared/errors/app-error'
 
 type CreateOrderServiceInput = {
   storeId: string
@@ -112,7 +113,7 @@ function validateDeliveryAddress(data: CreateOrderInput) {
   ]
 
   if (requiredFields.some((field) => field === null || field === undefined || field === "")) {
-    throw new Error("Delivery orders require customer and address information")
+    throw new BadRequestError("Delivery orders require customer and address information")
   }
 }
 
@@ -122,7 +123,7 @@ function validateUniqueSelections(data: CreateOrderInput) {
 
     for (const group of item.orderModifierGroups) {
       if (modifierGroupIds.has(group.modifierGroupId)) {
-        throw new Error(`Modifier group "${group.modifierGroupId}" cannot be selected more than once`)
+        throw new BadRequestError(`Modifier group "${group.modifierGroupId}" cannot be selected more than once`)
       }
 
       modifierGroupIds.add(group.modifierGroupId)
@@ -131,7 +132,7 @@ function validateUniqueSelections(data: CreateOrderInput) {
 
       for (const option of group.options) {
         if (modifierOptionIds.has(option.modifierOptionId)) {
-          throw new Error(`Modifier option "${option.modifierOptionId}" cannot be selected more than once`)
+          throw new BadRequestError(`Modifier option "${option.modifierOptionId}" cannot be selected more than once`)
         }
 
         modifierOptionIds.add(option.modifierOptionId)
@@ -151,11 +152,11 @@ function validateStoreCanReceiveOrder(
   serviceType: CreateOrderInput["serviceType"]
 ) {
   if (store.status !== "ACTIVE") {
-    throw new Error("Store is not active")
+    throw new ConflictError("Store is not active")
   }
 
   if (!store.isOpen) {
-    throw new Error("Store is closed")
+    throw new ConflictError("Store is closed")
   }
 
   const serviceTypeEnabled = {
@@ -165,7 +166,7 @@ function validateStoreCanReceiveOrder(
   }[serviceType]
 
   if (!serviceTypeEnabled) {
-    throw new Error(`Service type "${serviceType}" is not available for this store`)
+    throw new BadRequestError(`Service type "${serviceType}" is not available for this store`)
   }
 }
 
@@ -210,7 +211,7 @@ async function loadProductForOrder({
   })
 
   if (!product) {
-    throw new Error("Product not found or inactive")
+    throw new NotFoundError("Product not found or inactive")
   }
 
   return product
@@ -223,7 +224,7 @@ function buildModifierGroupSnapshot(
   const selectedCount = groupSelection.options.reduce((sum, option) => sum + option.quantity, 0)
 
   if (selectedCount < linkedGroup.minSelections || selectedCount > linkedGroup.maxSelections) {
-    throw new Error(
+    throw new BadRequestError(
       `Modifier group "${linkedGroup.name}" has invalid selections for min/max rules`
     )
   }
@@ -234,13 +235,13 @@ function buildModifierGroupSnapshot(
     const option = availableOptions.get(selection.modifierOptionId)
 
     if (!option) {
-      throw new Error(
+      throw new BadRequestError(
         `Modifier option "${selection.modifierOptionId}" is not linked to modifier group "${linkedGroup.name}"`
       )
     }
 
     if (option.maxQuantity !== null && selection.quantity > option.maxQuantity) {
-      throw new Error(
+      throw new BadRequestError(
         `Modifier option "${option.name}" exceeds its maximum quantity`
       )
     }
@@ -303,7 +304,7 @@ async function buildOrderItemPayload({
   })
 
   if (missingRequiredGroup) {
-    throw new Error(
+    throw new BadRequestError(
       `Modifier group "${missingRequiredGroup.modifierGroup.name}" requires a selection`
     )
   }
@@ -312,7 +313,7 @@ async function buildOrderItemPayload({
     const linkedGroup = linkedGroupsById.get(groupSelection.modifierGroupId)
 
     if (!linkedGroup) {
-      throw new Error(
+      throw new BadRequestError(
         `Modifier group "${groupSelection.modifierGroupId}" is not linked to product "${product.name}"`
       )
     }
@@ -466,7 +467,7 @@ export async function createOrder({
   })
 
   if (!store) {
-    throw new Error("Store not found")
+    throw new NotFoundError("Store not found")
   }
 
   validateStoreCanReceiveOrder(store, data.serviceType)

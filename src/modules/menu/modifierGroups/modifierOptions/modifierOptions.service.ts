@@ -1,5 +1,6 @@
 import prisma from "../../../../database"
 import { DeleteBulkOptionsOutput, ModifierOptionItem, ModifierOptionsOutput, ModifierOptionUpdateItem } from "./modifierOptions.schema"
+import { BadRequestError, NotFoundError } from '../../../../shared/errors/app-error'
 
 type modifierOptionsInput = {
     storeId: string,
@@ -28,7 +29,7 @@ export async function createModifierOptions({ data, modifierGroupId, storeId }: 
     })
 
     if (!modifierGroup) {
-        throw new Error("Modifier group not found")
+        throw new NotFoundError("Modifier group not found")
     }
 
     const payload = data.map((option) => ({
@@ -77,7 +78,7 @@ export async function updateBulkModifierOptions({ storeId, modifierGroupId, data
     })
 
     if (!modifierGroup) {
-        throw new Error("Modifier group not found")
+        throw new NotFoundError("Modifier group not found")
     }
 
     const ids = data.map((options) => options.id)
@@ -91,7 +92,7 @@ export async function updateBulkModifierOptions({ storeId, modifierGroupId, data
     })
 
     if(existingOptions.length !== ids.length){
-        throw new Error("One or more modifier options do not belong to this modifier group")
+        throw new BadRequestError("One or more modifier options do not belong to this modifier group")
     }
 
     await prisma.$transaction(
@@ -138,7 +139,7 @@ export async function deleteBulkModifierOptions({ ids, modifierGroupId, storeId 
     })
 
     if (!modifierGroup) {
-        throw new Error("Modifier group not found")
+        throw new NotFoundError("Modifier group not found")
     }
 
     const existingOptions = await prisma.modifierOption.findMany({
@@ -151,7 +152,7 @@ export async function deleteBulkModifierOptions({ ids, modifierGroupId, storeId 
     })
 
     if(existingOptions.length !== ids.length){
-        throw new Error("One or more modifier options do not belong to this modifier group")
+        throw new BadRequestError("One or more modifier options do not belong to this modifier group")
     }
 
     await prisma.modifierOption.deleteMany({

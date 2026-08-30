@@ -1,4 +1,4 @@
-import Fastify, { FastifyReply, FastifyRequest } from 'fastify'
+import Fastify, { FastifyRequest } from 'fastify'
 import swagger from '@fastify/swagger'
 import swaggerUi from '@fastify/swagger-ui'
 import scalar from '@scalar/fastify-api-reference'
@@ -22,6 +22,8 @@ import storesRoutes from './modules/stores/stores.routes.js'
 import menuRoutes from './modules/menu/menu.routes.js'
 import publicMenuRoutes from './modules/public/menu/publicMenu.routes.js'
 import orderRoutes from './modules/orders/order.routes.js'
+import { UnauthorizedError } from './shared/errors/app-error.js'
+import { globalErrorHandler } from './shared/errors/error-handler.js'
 
 const fastify = Fastify({
   logger: false
@@ -29,6 +31,7 @@ const fastify = Fastify({
 
 fastify.setValidatorCompiler(validatorCompiler)
 fastify.setSerializerCompiler(serializerCompiler)
+fastify.setErrorHandler(globalErrorHandler)
 
 await fastify.register(swagger, {
   openapi: {
@@ -83,11 +86,11 @@ await fastify.register(jwt, {
   secret: process.env.JWT_SECRET || 'dev-secret-change-me'
 })
 
-fastify.decorate('authenticate', async function (request: FastifyRequest, reply: FastifyReply) {
+fastify.decorate('authenticate', async function (request: FastifyRequest) {
   try {
     await request.jwtVerify()
   } catch {
-    return reply.status(401).send({ success: false, error: 'Unauthorized' })
+    throw new UnauthorizedError()
   }
 })
 

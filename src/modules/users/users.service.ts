@@ -1,6 +1,7 @@
 import { hash } from "bcryptjs";
 import prisma from "../../database";
 import { CreateUser, UserOutput } from "./users.schema";
+import { ForbiddenError, NotFoundError } from '../../shared/errors/app-error';
 
 type GetCurrentUserInput = {
     userId: string,
@@ -23,7 +24,7 @@ export async function getCurrentUser({ userId, storeId }: GetCurrentUserInput): 
     })
 
     if (!user) {
-        throw new Error('User not found')
+        throw new NotFoundError('User not found')
     }
 
     return {
@@ -95,10 +96,10 @@ export async function inactivateUser({ storeId, userId }: GetCurrentUserInput) {
     })
 
     if (!user) {
-        throw new Error('User not found')
+        throw new NotFoundError('User not found')
     }
     if (user.role === 'OWNER') {
-        throw new Error('Owner cannot be inactivated')
+        throw new ForbiddenError('Owner cannot be inactivated')
     }
 
     const updatedUser = await prisma.user.update({

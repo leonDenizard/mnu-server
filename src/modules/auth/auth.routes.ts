@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { authErrorResponseSchema, loginResponseSchema, loginSchema } from "./auth.schema";
-import { buildTokenPayload, InactiveUserError, InvalidCredentialsError, login } from "./auth.service";
+import { buildTokenPayload, login } from "./auth.service";
 
 export default function authRoutes(fastify: FastifyInstance) {
     fastify.post('/auth/login', {
@@ -15,41 +15,21 @@ export default function authRoutes(fastify: FastifyInstance) {
             }
         }
     }, async (request, reply) => {
+        const payload = loginSchema.parse(request.body)
+        const result = await login(payload)
 
-        try {
-            const payload = loginSchema.parse(request.body)
-            const result = await login(payload)
+        const accessToken = await reply.jwtSign(buildTokenPayload(result.user), {
+            expiresIn: '7d'
+        })
 
-            const accessToken = await (reply as any).jwtSign(buildTokenPayload(result.user), {
-                expiresIn: '7d'
-            })
-
-            return reply.status(200).send({
-                success: true,
-                data: {
-                    accessToken,
-                    tokenType: 'Bearer',
-                    expiresIn: 604800,
-                    user: result.user
-                }
-            })
-        } catch (error) {
-            if (error instanceof InvalidCredentialsError) {
-                return reply.status(401).send({
-                    success: false,
-                    error: 'Invalid credentials'
-                })
+        return reply.status(200).send({
+            success: true,
+            data: {
+                accessToken,
+                tokenType: 'Bearer',
+                expiresIn: 604800,
+                user: result.user
             }
-
-            if (error instanceof InactiveUserError) {
-                return reply.status(403).send({
-                    success: false,
-                    error: 'Inactive user'
-                })
-            }
-
-            throw error
-
-        }
+        })
     })
 }
