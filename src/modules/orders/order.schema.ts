@@ -1,4 +1,17 @@
 import z from "zod";
+import { createPaginatedResponseSchema } from '../../shared/schemas/response';
+import { querySchema } from '../../shared/schemas/pagination';
+
+export const orderStatusSchema = z.enum([
+    'PENDING',
+    'ACCEPTED',
+    'IN_PREPARATION',
+    'READY',
+    'CANCELED',
+    'FINISHED'
+])
+
+export const orderServiceTypeSchema = z.enum(['DELIVERY', 'PICKUP', 'DINE_IN'])
 
 export const orderItemModifierOptionInputSchema = z.object({
     modifierOptionId: z.string().uuid(),
@@ -20,7 +33,7 @@ export const orderItemInputSchema = z.object({
 export const createOrderInputSchema = z.object({
     customerName: z.string().optional().nullable(),
     customerPhone: z.string().optional().nullable(),
-    serviceType: z.enum(['DELIVERY', 'PICKUP', 'DINE_IN']),
+    serviceType: orderServiceTypeSchema,
     paymentMethod: z.enum(['PIX', 'CASH', 'CARD', 'OTHER']),
     paymentDetail: z.string().optional().nullable(),
     couponCode: z.string().optional().nullable(),
@@ -74,10 +87,10 @@ export const orderOutputSchema = z.object({
     sequenceKey: z.string(),
     customerName: z.string().optional().nullable(),
     customerPhone: z.string().optional().nullable(),
-    serviceType: z.enum(['DELIVERY', 'PICKUP', 'DINE_IN']),
+    serviceType: orderServiceTypeSchema,
     paymentMethod: z.enum(['PIX', 'CASH', 'CARD', 'OTHER']),
     paymentDetail: z.string().optional().nullable(),
-    status: z.enum(['PENDING', 'ACCEPTED', 'IN_PREPARATION', 'READY', 'CANCELED', 'FINISHED']),
+    status: orderStatusSchema,
     couponCode: z.string().optional().nullable(),
     subtotal: z.number().nonnegative(),
     deliveryFee: z.number().nonnegative(),
@@ -103,7 +116,7 @@ export const orderParamsSchema = z.object({
 })
 
 export const orderStatusUpdateInputSchema = z.object({
-    status: z.enum(['PENDING', 'ACCEPTED', 'IN_PREPARATION', 'READY', 'CANCELED', 'FINISHED']),
+    status: orderStatusSchema,
     reason: z.string().optional().nullable(),
 })
 
@@ -111,10 +124,25 @@ export const cancelOrderInputSchema = z.object({
     reason: z.string().min(1),
 })
 
-export const ordersListResponseSchema = z.object({
-    success: z.literal(true),
-    data: z.array(orderOutputSchema),
+export const listOrdersQuerySchema = querySchema.extend({
+    status: orderStatusSchema.optional()
 })
+
+export const orderSummaryOutputSchema = z.object({
+    id: z.string().uuid(),
+    orderNumber: z.number().int().positive(),
+    customerName: z.string().nullable(),
+    customerPhone: z.string().nullable(),
+    serviceType: orderServiceTypeSchema,
+    paymentMethod: z.enum(['PIX', 'CASH', 'CARD', 'OTHER']),
+    status: orderStatusSchema,
+    total: z.number().nonnegative(),
+    itemCount: z.number().int().nonnegative(),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime()
+})
+
+export const ordersListResponseSchema = createPaginatedResponseSchema(orderSummaryOutputSchema)
 
 export const orderResponseSchema = z.object({
     success: z.literal(true),
@@ -132,5 +160,7 @@ export type OrderOutput = z.infer<typeof orderOutputSchema>
 export type OrderParams = z.infer<typeof orderParamsSchema>
 export type OrderStatusUpdateInput = z.infer<typeof orderStatusUpdateInputSchema>
 export type CancelOrderInput = z.infer<typeof cancelOrderInputSchema>
+export type ListOrdersQuery = z.infer<typeof listOrdersQuerySchema>
+export type OrderSummaryOutput = z.infer<typeof orderSummaryOutputSchema>
 export type OrdersListResponse = z.infer<typeof ordersListResponseSchema>
 export type OrderResponse = z.infer<typeof orderResponseSchema>

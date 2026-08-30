@@ -4,9 +4,11 @@ import { buildSequenceKey } from "../../utils/buildSequenceKey"
 import { resolveOrderNumber } from "../../utils/resolveOrderNumber"
 import {
   CreateOrderInput,
+  ListOrdersQuery,
   OrderItemInput,
   OrderItemModifierGroupInput,
   OrderOutput,
+  OrderSummaryOutput,
 } from "./order.schema"
 import { BadRequestError, ConflictError, NotFoundError } from '../../shared/errors/app-error'
 
@@ -14,6 +16,19 @@ type CreateOrderServiceInput = {
   storeId: string
   userId: string
   data: CreateOrderInput
+}
+
+type ListOrdersServiceInput = ListOrdersQuery & {
+  storeId: string
+}
+
+type ListOrdersServiceOutput = {
+  data: OrderSummaryOutput[]
+  meta: {
+    total: number
+    page: number
+    lastPage: number
+  }
 }
 
 type LoadedProduct = Prisma.ProductGetPayload<{
@@ -440,6 +455,70 @@ function mapOrderOutput(order: CreatedOrder): OrderOutput {
     })),
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString()
+  }
+}
+
+export async function listOrders({
+  storeId,
+  page,
+  limit,
+  status
+}: ListOrdersServiceInput): Promise<ListOrdersServiceOutput> {
+  const skip = (page - 1) * limit
+  const where: Prisma.OrderWhereInput = {
+    storeId,
+    ...(status ? { status } : {})
+  }
+
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      select: {
+        id: true,
+        orderNumber: true,
+        customerName: true,
+        customerPhone: true,
+        serviceType: true,
+        paymentMethod: true,
+        status: true,
+        total: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: {
+          select: {
+            orderItems: true
+          }
+        }
+      },
+      orderBy: [
+        { createdAt: "desc" },
+        { id: "desc" }
+      ],
+      skip,
+      take: limit
+    }),
+    prisma.order.count({ where })
+  ])
+
+  return {
+    data: orders.map((order) => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      serviceType: order.serviceType,
+      paymentMethod: order.paymentMethod,
+      status: order.status,
+      total: Number(order.total),
+      itemCount: order._count.orderItems,
+      createdAt: order.createdAt.toISOString(),
+      updatedAt: order.updatedAt.toISOString()
+    })),
+    meta: {
+      total,
+      page,
+      lastPage: Math.ceil(total / limit)
+    }
   }
 }
 

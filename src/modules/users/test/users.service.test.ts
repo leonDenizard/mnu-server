@@ -1,9 +1,9 @@
 import { hash } from 'bcryptjs'
 
-import prisma from '../../database'
-import { createUser, getCurrentUser, inactivateUser, listUsers } from './users.service'
+import prisma from '../../../database'
+import { createUser, getCurrentUser, inactivateUser, listUsers } from '../users.service'
 
-jest.mock('../../database', () => ({
+jest.mock('../../../database', () => ({
   __esModule: true,
   default: {
     user: {
@@ -223,7 +223,8 @@ describe('users.service', () => {
       })
       expect(prismaMock.user.update).toHaveBeenCalledWith({
         where: {
-          id: 'user-2'
+          id: 'user-2',
+          storeId: 'store-1'
         },
         data: {
           active: false
@@ -242,15 +243,23 @@ describe('users.service', () => {
       })
     })
 
-    it('throws when the user is not found in the current store', async () => {
+    it('does not inactivate a user from another store', async () => {
       prismaMock.user.findFirst.mockResolvedValue(null)
 
       await expect(
         inactivateUser({
-          userId: 'missing-user',
+          userId: 'user-from-store-2',
           storeId: 'store-1'
         })
       ).rejects.toThrow('User not found')
+
+      expect(prismaMock.user.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: 'user-from-store-2',
+          storeId: 'store-1'
+        }
+      })
+      expect(prismaMock.user.update).not.toHaveBeenCalled()
     })
 
     it('throws when trying to inactivate an owner', async () => {

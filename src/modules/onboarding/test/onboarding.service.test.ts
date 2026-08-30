@@ -1,12 +1,12 @@
-import { Prisma } from '../../../generated/prisma/index.js'
+import { Prisma } from '../../../../generated/prisma/index.js'
 import { hash } from 'bcryptjs'
 
-import prisma from '../../database'
-import { generateSlug } from '../../utils/slug'
-import type { OnboardingInput } from './onboarding.schema'
-import { onboardingService } from './onboarding.service'
+import prisma from '../../../database'
+import { generateSlug } from '../../../utils/slug'
+import type { OnboardingInput } from '../onboarding.schema'
+import { onboardingService } from '../onboarding.service'
 
-jest.mock('../../database', () => ({
+jest.mock('../../../database', () => ({
   __esModule: true,
   default: {
     store: {
@@ -16,7 +16,7 @@ jest.mock('../../database', () => ({
   }
 }))
 
-jest.mock('../../utils/slug', () => ({
+jest.mock('../../../utils/slug', () => ({
   generateSlug: jest.fn()
 }))
 

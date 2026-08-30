@@ -1,8 +1,8 @@
-import prisma from '../../database'
-import type { CreateOrderInput } from './order.schema'
-import { createOrder } from './order.service'
+import prisma from '../../../database'
+import type { CreateOrderInput } from '../order.schema'
+import { createOrder } from '../order.service'
 
-jest.mock('../../database', () => ({
+jest.mock('../../../database', () => ({
   __esModule: true,
   default: {
     store: {

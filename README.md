@@ -17,6 +17,9 @@ API backend para gestão de lojas, cardápio e pedidos, construída com Fastify,
 
 O projeto é organizado por módulos de domínio.
 
+Os testes ficam em uma pasta `test/` dentro do domínio correspondente e são
+executados com `npm test`.
+
 Principais áreas atuais:
 - `auth`
 - `onboarding`

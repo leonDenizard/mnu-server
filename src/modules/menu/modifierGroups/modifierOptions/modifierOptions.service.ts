@@ -98,7 +98,8 @@ export async function updateBulkModifierOptions({ storeId, modifierGroupId, data
     await prisma.$transaction(
         data.map((option) => prisma.modifierOption.update({
             where: {
-                id: option.id
+                id: option.id,
+                modifierGroupId
             },
             data: {
                 name: option.name,

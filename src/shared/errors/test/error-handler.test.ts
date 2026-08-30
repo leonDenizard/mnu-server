@@ -1,8 +1,8 @@
 import Fastify from 'fastify'
 import { z } from 'zod'
 
-import { BadRequestError, NotFoundError } from './app-error'
-import { globalErrorHandler } from './error-handler'
+import { BadRequestError, NotFoundError } from '../app-error'
+import { globalErrorHandler } from '../error-handler'
 
 function buildTestApp() {
   const app = Fastify({ logger: false })

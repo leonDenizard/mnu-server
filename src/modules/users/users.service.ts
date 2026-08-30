@@ -105,6 +105,7 @@ export async function inactivateUser({ storeId, userId }: GetCurrentUserInput) {
     const updatedUser = await prisma.user.update({
         where: {
             id: userId,
+            storeId
         },
         data: {
             active: false

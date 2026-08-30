@@ -21,6 +21,7 @@ type UpdateCategoryById = {
 
 type DeleteCategoryById = {
     id: string
+    storeId: string
 }
 
 type GetAllCategoriesResponse = {
@@ -100,24 +101,30 @@ export async function createCategory({ storeId, data }: UpdateCategoryInput): Pr
 
 export async function updateCategory({ id, data, storeId}: UpdateCategoryById): Promise<CategoryOutput>{
 
-    const exists = await prisma.category.findFirst({
-        where: {storeId: storeId, title: data.title}
+    const currentCategory = await prisma.category.findFirst({
+        where: { id, storeId }
     })
-    
-    if(exists){
+
+    if (!currentCategory) {
+        throw new NotFoundError("Category not found in store")
+    }
+
+    const duplicateTitle = await prisma.category.findFirst({
+        where: {
+            storeId,
+            title: data.title,
+            id: { not: id }
+        }
+    })
+
+    if(duplicateTitle){
         throw new ConflictError("A category with this name already exists")
     }
 
     const category = await prisma.category.update({
-        where: { id },
+        where: { id, storeId },
         data
     })
-
-    
-
-    if(!category){
-        throw new NotFoundError("Category not found in store")
-    }
 
     return{
         id: category.id,
@@ -132,10 +139,10 @@ export async function updateCategory({ id, data, storeId}: UpdateCategoryById): 
     }
 }
 
-export async function deleteCategoryByID({id}: DeleteCategoryById): Promise<CategoryOutput>{
+export async function deleteCategoryByID({id, storeId}: DeleteCategoryById): Promise<CategoryOutput>{
 
-    const existsCategory = await prisma.category.findUnique({
-        where: {id}
+    const existsCategory = await prisma.category.findFirst({
+        where: { id, storeId }
     })
 
     if(!existsCategory){
@@ -143,7 +150,7 @@ export async function deleteCategoryByID({id}: DeleteCategoryById): Promise<Cate
     }
 
     const category = await prisma.category.delete({
-        where: {id}
+        where: { id, storeId }
     })
 
     

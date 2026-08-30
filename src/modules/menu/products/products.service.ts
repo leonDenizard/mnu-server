@@ -160,7 +160,8 @@ export async function updateProduct({ data, productId, storeId }: UpdateCurretPr
 
     const product = await prisma.product.update({
         where: {
-            id: productId
+            id: productId,
+            storeId
         },
         data
     })
@@ -204,7 +205,8 @@ export async function deleteProductById({ productId, storeId }: ProductById): Pr
 
     const product = await prisma.product.delete({
         where: {
-            id: productId
+            id: productId,
+            storeId
         }
     })
 

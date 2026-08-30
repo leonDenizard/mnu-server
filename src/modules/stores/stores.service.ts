@@ -252,7 +252,8 @@ export async function deleteHourById({ storeId, id }: DeleteHourByIdInput): Prom
 
     await prisma.storeOperatingHour.delete({
         where: {
-            id
+            id,
+            storeId
         }
     })
 

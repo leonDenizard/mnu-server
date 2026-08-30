@@ -86,7 +86,10 @@ export default function categoriesRoutes(fastify: FastifyInstance) {
     }, async (request, reply) => {
 
         const params = categoryParamsSchema.parse(request.params)
-        const category = await deleteCategoryByID({id: params.id})
+        const category = await deleteCategoryByID({
+            id: params.id,
+            storeId: request.user.storeId
+        })
 
         reply.status(201).send({
             success: true,
