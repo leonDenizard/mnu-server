@@ -12,8 +12,78 @@ import {
 } from "./order.schema"
 import { createOrder, getOrderById, listOrders } from "./order.service"
 import { cancelOrderByCustomerToken, transitionStoreOrder } from './order-state.service'
+import { getLatestOrderStreamEventId, listOrderStreamEvents } from './order-events.service'
 
 export default function orderRoutes(fastify: FastifyInstance) {
+  fastify.get(
+    '/api/orders/events',
+    {
+      preHandler: [fastify.authenticate],
+      schema: {
+        tags: ['Orders'],
+        description: 'Live store order events over Server-Sent Events (SSE). Authenticate with a Bearer token.',
+        response: {}
+      }
+    },
+    async (request, reply) => {
+      const header = request.headers['last-event-id']
+      const lastEventId = typeof header === 'string' ? header : undefined
+      let cursor = lastEventId ?? await getLatestOrderStreamEventId(request.user.storeId)
+      let closed = false
+      let polling = false
+
+      reply.hijack()
+      reply.raw.writeHead(200, {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no'
+      })
+      if (!lastEventId) {
+        reply.raw.write(`id: ${cursor}\n`)
+        reply.raw.write('event: stream.ready\n')
+        reply.raw.write(`data: ${JSON.stringify({ cursor })}\n\n`)
+      }
+
+      const writeEvents = async () => {
+        if (closed || polling) return
+        polling = true
+
+        try {
+          const events = await listOrderStreamEvents({
+            storeId: request.user.storeId,
+            afterEventId: cursor
+          })
+
+          for (const event of events) {
+            reply.raw.write(`id: ${event.id}\n`)
+            reply.raw.write(`event: ${event.type}\n`)
+            reply.raw.write(`data: ${JSON.stringify({ ...event.payload as object, occurredAt: event.occurredAt })}\n\n`)
+            cursor = event.id
+          }
+        } catch (error) {
+          request.log.error({ err: error }, 'Failed to publish order stream events')
+        } finally {
+          polling = false
+        }
+      }
+
+      void writeEvents()
+      const interval = setInterval(() => void writeEvents(), 1_000)
+      const heartbeat = setInterval(() => {
+        if (!closed) reply.raw.write(': keep-alive\n\n')
+      }, 15_000)
+      interval.unref()
+      heartbeat.unref()
+
+      request.raw.on('close', () => {
+        closed = true
+        clearInterval(interval)
+        clearInterval(heartbeat)
+      })
+    }
+  )
+
   fastify.get(
     "/api/orders",
     {

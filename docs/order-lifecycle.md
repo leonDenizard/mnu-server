@@ -148,14 +148,41 @@ Eventos atuais:
 O payload contém `orderId`, `storeId`, estado, ação, versão e data. A versão
 permite ao cliente ignorar eventos antigos ou duplicados.
 
-O publicador SSE ainda será implementado. Ele deverá consumir a outbox,
-publicar o evento e preencher `publishedAt`. Em reconexões, o frontend deve
-consultar o estado atual via REST; o SSE sinaliza mudanças, mas não substitui o
-banco como fonte de verdade.
+O endpoint `GET /api/orders/events` publica esses eventos por SSE. Ele exige o
+token JWT da loja no cabeçalho `Authorization: Bearer <token>` e só entrega
+eventos do respectivo `storeId`.
+
+Cada evento tem um `id` incremental da outbox. Na primeira conexão, a API envia
+`stream.ready` com o cursor atual e não reenvia o histórico inteiro. Em uma
+reconexão, o cliente deve enviar `Last-Event-ID` com o último id recebido; assim
+recebe apenas os eventos posteriores. O frontend deve carregar o estado atual
+via REST ao abrir ou reconectar. Para não haver lacuna entre o snapshot e o
+stream, abra o SSE, espere `stream.ready`, carregue o REST e mantenha em fila os
+eventos recebidos até o snapshot terminar.
+
+O corpo SSE tem o formato abaixo. O campo `data` preserva o payload original do
+evento e acrescenta `occurredAt`:
+
+```text
+id: 42
+event: order.status.changed
+data: {"orderId":"...","status":"READY","version":3,"occurredAt":"..."}
+```
+
+Como o endpoint usa `Authorization`, o frontend deve abrir a conexão com uma
+biblioteca que permita cabeçalhos (por exemplo `fetch-event-source`) ou com
+`fetch` e leitura de stream. O `EventSource` nativo do navegador não permite
+enviar esse cabeçalho.
+
+Nesta primeira versão, cada conexão consulta a outbox periodicamente. Isso é
+seguro entre múltiplas instâncias da API e preserva a reconexão. Para volumes
+maiores, podemos trocar o mecanismo de despertar por Redis ou PostgreSQL
+`LISTEN/NOTIFY`, mantendo o mesmo contrato do endpoint.
 
 ## Endpoints operacionais
 
 - `GET /api/orders`
+- `GET /api/orders/events` (SSE autenticado da loja)
 - `GET /api/orders/:id`
 - `PATCH /api/orders/:id/accept`
 - `PATCH /api/orders/:id/ready`
