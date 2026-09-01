@@ -8,12 +8,18 @@ jest.mock('../../../database', () => ({
     store: {
       findFirst: jest.fn()
     },
+    user: {
+      findFirst: jest.fn()
+    },
     $transaction: jest.fn()
   }
 }))
 
 const prismaMock = prisma as unknown as {
   store: {
+    findFirst: jest.Mock
+  }
+  user: {
     findFirst: jest.Mock
   }
   $transaction: jest.Mock
@@ -55,6 +61,7 @@ describe('createOrder validations', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     prismaMock.store.findFirst.mockResolvedValue(availableStore)
+    prismaMock.user.findFirst.mockResolvedValue({ id: 'user-1', name: 'Maria' })
   })
 
   it('rejects orders when the store is not active', async () => {

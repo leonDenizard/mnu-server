@@ -31,6 +31,7 @@ Principais áreas atuais:
 Documentação útil:
 - [docs/domain.md](./docs/domain.md)
 - [docs/api-conventions.md](./docs/api-conventions.md)
+- [docs/order-lifecycle.md](./docs/order-lifecycle.md)
 
 ## Instalação
 

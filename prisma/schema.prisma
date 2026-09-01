@@ -46,6 +46,7 @@ model Store {
   legalName         String?
   status            StoreStatus       @default(ACTIVE)
   orderSequenceMode OrderSequenceMode @default(CONTINUOUS)
+  autoAcceptOrders  Boolean           @default(false)
 
   phone    String?
   whatsapp String?
@@ -81,6 +82,7 @@ model Store {
   modifierGroups ModifierGroup[]
   orders         Order[]
   orderSequences OrderSequence[]
+  orderEvents    OrderEventOutbox[]
 }
 
 /// =================
@@ -247,11 +249,36 @@ enum ServiceType {
 
 enum OrderStatus {
   PENDING
-  ACCEPTED
   IN_PREPARATION
   READY
   CANCELED
   FINISHED
+}
+
+enum OrderHistoryAction {
+  CREATED
+  AUTO_ACCEPTED
+  ACCEPTED
+  REJECTED
+  CUSTOMER_CANCELED
+  STORE_CANCELED
+  ACCEPTANCE_TIMED_OUT
+  MARKED_READY
+  FINISHED
+}
+
+enum OrderActorType {
+  CUSTOMER
+  STORE_USER
+  SYSTEM
+  INTEGRATION
+}
+
+enum OrderCancellationType {
+  CUSTOMER_CANCELED
+  STORE_REJECTED
+  STORE_CANCELED
+  ACCEPTANCE_TIMEOUT
 }
 
 enum PaymentMethod {
@@ -279,6 +306,11 @@ model Order {
   total                 Decimal              @db.Decimal(12, 2)
   noteOrder             String?
   cancellationReason    String?
+  cancellationType      OrderCancellationType?
+  acceptanceExpiresAt   DateTime?
+  canceledAt            DateTime?
+  publicAccessTokenHash String?                  @unique
+  version               Int                      @default(1)
   printedAt             DateTime?
   deliveryStreet        String?
   deliveryAddressNumber Int?
@@ -292,10 +324,12 @@ model Order {
   store                 Store                @relation(fields: [storeId], references: [id], onDelete: Cascade)
   orderItems            OrderItem[]
   orderStatusHistories  OrderStatusHistory[]
+  orderEvents           OrderEventOutbox[]
 
   @@unique([storeId, sequenceKey, orderNumber])
   @@index([storeId, createdAt])
   @@index([storeId, status, createdAt])
+  @@index([status, acceptanceExpiresAt])
 }
 
 model OrderItem {
@@ -352,18 +386,40 @@ model OrderItemModifierOption {
 }
 
 model OrderStatusHistory {
-  id        String      @id @default(uuid())
-  orderId   String
-  status    OrderStatus
-  userId    String
-  reason    String?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id                String             @id @default(uuid())
+  orderId           String
+  previousStatus    OrderStatus?
+  status            OrderStatus
+  action            OrderHistoryAction
+  actorType         OrderActorType
+  actorUserId       String?
+  actorNameSnapshot String?
+  reason            String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  actorUser User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId, createdAt])
+}
+
+model OrderEventOutbox {
+  id          BigInt    @id @default(autoincrement())
+  orderId     String
+  storeId     String
+  type        String
+  payload     Json
+  attempts    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, id])
+  @@index([storeId, id])
+  @@index([publishedAt, id])
 }
 
 model OrderSequence {

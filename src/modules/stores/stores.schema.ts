@@ -25,6 +25,7 @@ export const storeOutputSchema = z.object({
     supportsDelivery: z.boolean(),
     supportsPickup: z.boolean(),
     supportsDineIn: z.boolean(),
+    autoAcceptOrders: z.boolean(),
     deliveryRadiusKm: z.number().nullable(),
     deliveryFeeCents: z.number().nullable(),
 
@@ -58,6 +59,7 @@ export const updateStoreSchema = z.object({
     supportsDelivery: z.boolean().optional(),
     supportsPickup: z.boolean().optional(),
     supportsDineIn: z.boolean().optional(),
+    autoAcceptOrders: z.boolean().optional(),
     deliveryRadiusKm: z.number().optional(),
     deliveryFeeCents: z.number().optional(),
 

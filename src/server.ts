@@ -24,6 +24,7 @@ import publicMenuRoutes from './modules/public/menu/publicMenu.routes.js'
 import orderRoutes from './modules/orders/order.routes.js'
 import { UnauthorizedError } from './shared/errors/app-error.js'
 import { globalErrorHandler } from './shared/errors/error-handler.js'
+import { startOrderExpirationWorker } from './modules/orders/order-expiration.worker.js'
 
 const fastify = Fastify({
   logger: false
@@ -104,7 +105,10 @@ await fastify.register(publicMenuRoutes)
 await fastify.register(orderRoutes)
 //await fastify.register(userRoutes, { prefix: '/api' })
 
+let stopOrderExpirationWorker: (() => void) | undefined
+
 fastify.addHook('onClose', async () => {
+  stopOrderExpirationWorker?.()
   await prisma.$disconnect()
 })
 
@@ -117,6 +121,7 @@ const start = async () => {
     const HOST = process.env.HOST || '0.0.0.0'
 
     await fastify.listen({ port: PORT, host: HOST })
+    stopOrderExpirationWorker = startOrderExpirationWorker({ logger: fastify.log })
     
     console.log(`Server running at http://localhost:${PORT}`)
     console.log(`Swagger UI: http://localhost:${PORT}/docs`)

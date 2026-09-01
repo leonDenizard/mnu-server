@@ -11,6 +11,7 @@ import {
   OrderSummaryOutput,
 } from "./order.schema"
 import { BadRequestError, ConflictError, NotFoundError } from '../../shared/errors/app-error'
+import { createOrderAccessToken } from './order-access-token'
 
 type CreateOrderServiceInput = {
   storeId: string
@@ -68,6 +69,7 @@ type CreatedOrder = Prisma.OrderGetPayload<{
         }
       }
     }
+    orderStatusHistories: true
   }
 }>
 
@@ -418,6 +420,10 @@ function mapOrderOutput(order: CreatedOrder): OrderOutput {
     total: Number(order.total),
     noteOrder: order.noteOrder,
     cancellationReason: order.cancellationReason,
+    cancellationType: order.cancellationType,
+    acceptanceExpiresAt: order.acceptanceExpiresAt?.toISOString() ?? null,
+    canceledAt: order.canceledAt?.toISOString() ?? null,
+    version: order.version,
     printedAt: order.printedAt ? order.printedAt.toISOString() : null,
     deliveryStreet: order.deliveryStreet,
     deliveryAddressNumber: order.deliveryAddressNumber,
@@ -453,9 +459,57 @@ function mapOrderOutput(order: CreatedOrder): OrderOutput {
         }))
       }))
     })),
+    history: order.orderStatusHistories.map((history) => ({
+      id: history.id,
+      previousStatus: history.previousStatus,
+      status: history.status,
+      action: history.action,
+      actorType: history.actorType,
+      actorUserId: history.actorUserId,
+      actorNameSnapshot: history.actorNameSnapshot,
+      reason: history.reason,
+      createdAt: history.createdAt.toISOString()
+    })),
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString()
   }
+}
+
+export async function getOrderById({
+  storeId,
+  orderId
+}: {
+  storeId: string
+  orderId: string
+}): Promise<OrderOutput> {
+  const order = await prisma.order.findFirst({
+    where: {
+      id: orderId,
+      storeId
+    },
+    include: {
+      orderItems: {
+        include: {
+          modifierGroups: {
+            include: {
+              options: true
+            }
+          }
+        }
+      },
+      orderStatusHistories: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      }
+    }
+  })
+
+  if (!order) {
+    throw new NotFoundError("Order not found")
+  }
+
+  return mapOrderOutput(order)
 }
 
 export async function listOrders({
@@ -526,7 +580,7 @@ export async function createOrder({
   storeId,
   userId,
   data
-}: CreateOrderServiceInput): Promise<OrderOutput> {
+}: CreateOrderServiceInput): Promise<{ order: OrderOutput; customerAccessToken: string }> {
   validateDeliveryAddress(data)
   validateUniqueSelections(data)
 
@@ -540,6 +594,7 @@ export async function createOrder({
       supportsDelivery: true,
       supportsPickup: true,
       supportsDineIn: true,
+      autoAcceptOrders: true,
       orderSequenceMode: true,
       deliveryFeeCents: true
     }
@@ -551,6 +606,29 @@ export async function createOrder({
 
   validateStoreCanReceiveOrder(store, data.serviceType)
 
+  const actor = await prisma.user.findFirst({
+    where: {
+      id: userId,
+      storeId,
+      active: true
+    },
+    select: {
+      id: true,
+      name: true
+    }
+  })
+
+  if (!actor) {
+    throw new NotFoundError("Authenticated user not found in store")
+  }
+
+  const { token: customerAccessToken, tokenHash: publicAccessTokenHash } = createOrderAccessToken()
+  const autoAccepted = store.autoAcceptOrders
+  const initialStatus = autoAccepted ? "IN_PREPARATION" : "PENDING"
+  const acceptanceExpiresAt = autoAccepted
+    ? null
+    : new Date(Date.now() + 5 * 60 * 1000)
+
   const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const payload = await buildOrderPayload({
       tx,
@@ -560,7 +638,7 @@ export async function createOrder({
       deliveryFeeCents: store.deliveryFeeCents
     })
 
-    return tx.order.create({
+    const createdOrder = await tx.order.create({
       data: {
         storeId,
         orderNumber: payload.orderNumber,
@@ -570,6 +648,10 @@ export async function createOrder({
         serviceType: data.serviceType,
         paymentMethod: data.paymentMethod,
         paymentDetail: data.paymentDetail ?? null,
+        status: initialStatus,
+        acceptanceExpiresAt,
+        publicAccessTokenHash,
+        version: autoAccepted ? 2 : 1,
         subtotal: payload.subtotal,
         deliveryFee: payload.deliveryFee,
         discount: new Prisma.Decimal(0),
@@ -599,11 +681,28 @@ export async function createOrder({
           }))
         },
         orderStatusHistories: {
-          create: {
-            status: "PENDING",
-            userId,
-            reason: null
-          }
+          create: [
+            {
+              previousStatus: null,
+              status: "PENDING",
+              action: "CREATED",
+              actorType: "STORE_USER",
+              actorUserId: actor.id,
+              actorNameSnapshot: actor.name,
+              reason: null
+            },
+            ...(autoAccepted
+              ? [{
+                  previousStatus: "PENDING" as const,
+                  status: "IN_PREPARATION" as const,
+                  action: "AUTO_ACCEPTED" as const,
+                  actorType: "SYSTEM" as const,
+                  actorUserId: null,
+                  actorNameSnapshot: null,
+                  reason: null
+                }]
+              : [])
+          ]
         }
       },
       include: {
@@ -615,10 +714,36 @@ export async function createOrder({
               }
             }
           }
+        },
+        orderStatusHistories: {
+          orderBy: {
+            createdAt: "asc"
+          }
         }
       }
     })
+
+    await tx.orderEventOutbox.create({
+      data: {
+        orderId: createdOrder.id,
+        storeId,
+        type: "order.created",
+        payload: {
+          orderId: createdOrder.id,
+          storeId,
+          orderNumber: createdOrder.orderNumber,
+          status: createdOrder.status,
+          version: createdOrder.version,
+          occurredAt: createdOrder.createdAt.toISOString()
+        }
+      }
+    })
+
+    return createdOrder
   })
 
-  return mapOrderOutput(order)
+  return {
+    order: mapOrderOutput(order),
+    customerAccessToken
+  }
 }

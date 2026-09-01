@@ -171,9 +171,11 @@ Em geral, o cardápio público inclui:
 - Prisma é a fonte de verdade da modelagem
 - preferir simplicidade antes de abstrações mais pesadas
 
-## Próximo domínio natural
-Pedidos públicos e operacionais:
-- criação de pedido
-- snapshot de preço
-- validação de loja aberta
-- histórico do cliente em módulo público separado
+## Pedidos
+
+O ciclo operacional, regras de cancelamento, aceite automático, timeout,
+auditoria e preparação para SSE estão documentados em
+[order-lifecycle.md](./order-lifecycle.md).
+
+O histórico do cliente permanece como módulo público futuro. No MVP, o acesso
+ao pedido é feito por um token aleatório específico daquele pedido.

@@ -9,7 +9,7 @@ export default function productsRoutes(fastify: FastifyInstance) {
         preHandler: [fastify.authenticate],
         schema: {
             tags: ['Product'],
-            description: 'Get all product on category',
+            description: 'Get all products in a category',
             querystring: querySchema,
             response: {
                 200: productListResponseSchema
@@ -53,7 +53,7 @@ export default function productsRoutes(fastify: FastifyInstance) {
         preHandler: [fastify.authenticate],
         schema: {
             tags: ['Product'],
-            description: 'Create category',
+            description: 'Create a product on category',
             body: productInputSchema,
             response: {
                 201: productResponseSchema

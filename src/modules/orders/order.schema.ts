@@ -4,7 +4,6 @@ import { querySchema } from '../../shared/schemas/pagination';
 
 export const orderStatusSchema = z.enum([
     'PENDING',
-    'ACCEPTED',
     'IN_PREPARATION',
     'READY',
     'CANCELED',
@@ -12,6 +11,32 @@ export const orderStatusSchema = z.enum([
 ])
 
 export const orderServiceTypeSchema = z.enum(['DELIVERY', 'PICKUP', 'DINE_IN'])
+
+export const orderHistoryActionSchema = z.enum([
+    'CREATED',
+    'AUTO_ACCEPTED',
+    'ACCEPTED',
+    'REJECTED',
+    'CUSTOMER_CANCELED',
+    'STORE_CANCELED',
+    'ACCEPTANCE_TIMED_OUT',
+    'MARKED_READY',
+    'FINISHED'
+])
+
+export const orderActorTypeSchema = z.enum([
+    'CUSTOMER',
+    'STORE_USER',
+    'SYSTEM',
+    'INTEGRATION'
+])
+
+export const orderCancellationTypeSchema = z.enum([
+    'CUSTOMER_CANCELED',
+    'STORE_REJECTED',
+    'STORE_CANCELED',
+    'ACCEPTANCE_TIMEOUT'
+])
 
 export const orderItemModifierOptionInputSchema = z.object({
     modifierOptionId: z.string().uuid(),
@@ -80,6 +105,18 @@ export const orderItemOutputSchema = z.object({
     orderModifierGroups: z.array(orderItemModifierGroupOutputSchema),
 })
 
+export const orderStatusHistoryOutputSchema = z.object({
+    id: z.string().uuid(),
+    previousStatus: orderStatusSchema.nullable(),
+    status: orderStatusSchema,
+    action: orderHistoryActionSchema,
+    actorType: orderActorTypeSchema,
+    actorUserId: z.string().uuid().nullable(),
+    actorNameSnapshot: z.string().nullable(),
+    reason: z.string().nullable(),
+    createdAt: z.string().datetime()
+})
+
 export const orderOutputSchema = z.object({
     id: z.string().uuid(),
     storeId: z.string().uuid(),
@@ -98,6 +135,10 @@ export const orderOutputSchema = z.object({
     total: z.number().nonnegative(),
     noteOrder: z.string().optional().nullable(),
     cancellationReason: z.string().optional().nullable(),
+    cancellationType: orderCancellationTypeSchema.nullable(),
+    acceptanceExpiresAt: z.string().datetime().nullable(),
+    canceledAt: z.string().datetime().nullable(),
+    version: z.number().int().positive(),
     printedAt: z.string().optional().nullable(),
     deliveryStreet: z.string().optional().nullable(),
     deliveryAddressNumber: z.number().int().optional().nullable(),
@@ -107,6 +148,7 @@ export const orderOutputSchema = z.object({
     deliveryZipCode: z.string().optional().nullable(),
     deliveryComplement: z.string().optional().nullable(),
     items: z.array(orderItemOutputSchema).min(1),
+    history: z.array(orderStatusHistoryOutputSchema),
     createdAt: z.string(),
     updatedAt: z.string(),
 })
@@ -121,7 +163,11 @@ export const orderStatusUpdateInputSchema = z.object({
 })
 
 export const cancelOrderInputSchema = z.object({
-    reason: z.string().min(1),
+    reason: z.string().trim().min(1),
+})
+
+export const publicOrderAccessParamsSchema = z.object({
+    token: z.string().min(32)
 })
 
 export const listOrdersQuerySchema = querySchema.extend({
@@ -149,6 +195,30 @@ export const orderResponseSchema = z.object({
     data: orderOutputSchema,
 })
 
+export const createOrderResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.object({
+        order: orderOutputSchema,
+        customerAccessToken: z.string().min(32)
+    })
+})
+
+export const orderStateOutputSchema = z.object({
+    id: z.string().uuid(),
+    status: orderStatusSchema,
+    cancellationType: orderCancellationTypeSchema.nullable(),
+    cancellationReason: z.string().nullable(),
+    acceptanceExpiresAt: z.string().datetime().nullable(),
+    canceledAt: z.string().datetime().nullable(),
+    version: z.number().int().positive(),
+    updatedAt: z.string().datetime()
+})
+
+export const orderStateResponseSchema = z.object({
+    success: z.literal(true),
+    data: orderStateOutputSchema
+})
+
 export type OrderItemModifierOptionInput = z.infer<typeof orderItemModifierOptionInputSchema>
 export type OrderItemModifierGroupInput = z.infer<typeof orderItemModifierGroupInputSchema>
 export type OrderItemInput = z.infer<typeof orderItemInputSchema>
@@ -156,11 +226,13 @@ export type CreateOrderInput = z.infer<typeof createOrderInputSchema>
 export type OrderItemModifierOptionOutput = z.infer<typeof orderItemModifierOptionOutputSchema>
 export type OrderItemModifierGroupOutput = z.infer<typeof orderItemModifierGroupOutputSchema>
 export type OrderItemOutput = z.infer<typeof orderItemOutputSchema>
+export type OrderStatusHistoryOutput = z.infer<typeof orderStatusHistoryOutputSchema>
 export type OrderOutput = z.infer<typeof orderOutputSchema>
 export type OrderParams = z.infer<typeof orderParamsSchema>
 export type OrderStatusUpdateInput = z.infer<typeof orderStatusUpdateInputSchema>
 export type CancelOrderInput = z.infer<typeof cancelOrderInputSchema>
 export type ListOrdersQuery = z.infer<typeof listOrdersQuerySchema>
 export type OrderSummaryOutput = z.infer<typeof orderSummaryOutputSchema>
+export type OrderStateOutput = z.infer<typeof orderStateOutputSchema>
 export type OrdersListResponse = z.infer<typeof ordersListResponseSchema>
 export type OrderResponse = z.infer<typeof orderResponseSchema>
