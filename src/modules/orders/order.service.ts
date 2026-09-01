@@ -12,10 +12,15 @@ import {
 } from "./order.schema"
 import { BadRequestError, ConflictError, NotFoundError } from '../../shared/errors/app-error'
 import { createOrderAccessToken } from './order-access-token'
+import {
+  createCustomerShortId,
+  normalizeCustomerPhone
+} from '../customers/customer-access-token.js'
 
 type CreateOrderServiceInput = {
   storeId: string
-  userId: string
+  userId?: string
+  customerId?: string
   data: CreateOrderInput
 }
 
@@ -579,6 +584,7 @@ export async function listOrders({
 export async function createOrder({
   storeId,
   userId,
+  customerId,
   data
 }: CreateOrderServiceInput): Promise<{ order: OrderOutput; customerAccessToken: string }> {
   validateDeliveryAddress(data)
@@ -606,20 +612,19 @@ export async function createOrder({
 
   validateStoreCanReceiveOrder(store, data.serviceType)
 
-  const actor = await prisma.user.findFirst({
-    where: {
-      id: userId,
-      storeId,
-      active: true
-    },
-    select: {
-      id: true,
-      name: true
-    }
-  })
+  const actor = userId
+    ? await prisma.user.findFirst({
+        where: { id: userId, storeId, active: true },
+        select: { id: true, name: true }
+      })
+    : null
 
-  if (!actor) {
+  if (userId && !actor) {
     throw new NotFoundError("Authenticated user not found in store")
+  }
+
+  if (!userId && !customerId) {
+    throw new BadRequestError('Public orders require a customer')
   }
 
   const { token: customerAccessToken, tokenHash: publicAccessTokenHash } = createOrderAccessToken()
@@ -641,6 +646,7 @@ export async function createOrder({
     const createdOrder = await tx.order.create({
       data: {
         storeId,
+        customerId: customerId ?? null,
         orderNumber: payload.orderNumber,
         sequenceKey: payload.sequenceKey,
         customerName: data.customerName ?? null,
@@ -686,9 +692,9 @@ export async function createOrder({
               previousStatus: null,
               status: "PENDING",
               action: "CREATED",
-              actorType: "STORE_USER",
-              actorUserId: actor.id,
-              actorNameSnapshot: actor.name,
+              actorType: userId ? "STORE_USER" : "CUSTOMER",
+              actorUserId: actor?.id ?? null,
+              actorNameSnapshot: actor?.name ?? data.customerName ?? null,
               reason: null
             },
             ...(autoAccepted
@@ -745,5 +751,67 @@ export async function createOrder({
   return {
     order: mapOrderOutput(order),
     customerAccessToken
+  }
+}
+
+export async function createPublicOrder({
+  slug,
+  data
+}: {
+  slug: string
+  data: CreateOrderInput
+}) {
+  let phoneNormalized: string
+
+  try {
+    phoneNormalized = normalizeCustomerPhone(data.customerPhone ?? '')
+  } catch {
+    throw new BadRequestError('A valid customer phone is required')
+  }
+
+  if (!data.customerName?.trim()) {
+    throw new BadRequestError('Customer name is required')
+  }
+
+  const store = await prisma.store.findUnique({
+    where: { slug },
+    select: { id: true }
+  })
+
+  if (!store) {
+    throw new NotFoundError('Store not found')
+  }
+
+  const customer = await prisma.customer.upsert({
+    where: {
+      storeId_phoneNormalized: { storeId: store.id, phoneNormalized }
+    },
+    create: {
+      storeId: store.id,
+      phoneNormalized,
+      name: data.customerName.trim()
+    },
+    update: {
+      name: data.customerName.trim()
+    }
+  })
+
+  // The raw value is intentionally never persisted. Issue a fresh personal
+  // link on each public checkout while keeping existing links valid until the
+  // store explicitly invalidates them.
+  const newLink = createCustomerShortId()
+  await prisma.customerAccessLink.create({
+    data: { customerId: customer.id, shortIdHash: newLink.shortIdHash }
+  })
+
+  const result = await createOrder({
+    storeId: store.id,
+    customerId: customer.id,
+    data: { ...data, customerPhone: phoneNormalized }
+  })
+
+  return {
+    ...result,
+    customerShortId: newLink.shortId
   }
 }

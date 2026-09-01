@@ -63,6 +63,36 @@ export const publicMenuResponseSchema = z.object({
     data: publicMenuStoreSchema
 })
 
+export const publicCustomerOrderSchema = z.object({
+    id: z.string().uuid(),
+    orderNumber: z.number().int().positive(),
+    status: z.enum(['PENDING', 'IN_PREPARATION', 'READY', 'CANCELED', 'FINISHED']),
+    serviceType: z.enum(['DELIVERY', 'PICKUP', 'DINE_IN']),
+    total: z.number().nonnegative(),
+    deliveryAddressLabel: z.string().nullable(),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime()
+})
+
+export const publicCustomerOrdersResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.object({
+        customerName: z.string().nullable(),
+        orders: z.array(publicCustomerOrderSchema)
+    })
+})
+
+export const publicCreateOrderResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.object({
+        orderId: z.string().uuid(),
+        orderNumber: z.number().int().positive(),
+        status: z.enum(['PENDING', 'IN_PREPARATION', 'READY', 'CANCELED', 'FINISHED']),
+        customerShortId: z.string(),
+        customerAccessToken: z.string().min(32)
+    })
+})
+
 
 export type SlugParams = z.infer<typeof inputSlugParamsSchema>
 export type PublicMenuStore = z.infer<typeof publicMenuStoreSchema>

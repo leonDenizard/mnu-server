@@ -73,6 +73,11 @@ export const createOrderInputSchema = z.object({
     items: z.array(orderItemInputSchema).min(1),
 })
 
+export const createPublicOrderInputSchema = createOrderInputSchema.extend({
+  customerName: z.string().trim().min(1),
+  customerPhone: z.string().trim().min(10)
+})
+
 export const orderItemModifierOptionOutputSchema = z.object({
     id: z.string().uuid(),
     modifierOptionId: z.string().uuid().optional().nullable(),

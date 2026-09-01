@@ -81,6 +81,7 @@ model Store {
   operatingHours StoreOperatingHour[]
   modifierGroups ModifierGroup[]
   orders         Order[]
+  customers      Customer[]
   orderSequences OrderSequence[]
   orderEvents    OrderEventOutbox[]
 }
@@ -291,6 +292,7 @@ enum PaymentMethod {
 model Order {
   id                    String               @id @default(uuid())
   storeId               String
+  customerId            String?
   orderNumber           Int
   sequenceKey           String
   customerName          String?
@@ -322,6 +324,7 @@ model Order {
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
   store                 Store                @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customer              Customer?            @relation(fields: [customerId], references: [id], onDelete: SetNull)
   orderItems            OrderItem[]
   orderStatusHistories  OrderStatusHistory[]
   orderEvents           OrderEventOutbox[]
@@ -330,6 +333,54 @@ model Order {
   @@index([storeId, createdAt])
   @@index([storeId, status, createdAt])
   @@index([status, acceptanceExpiresAt])
+  @@index([customerId, createdAt])
+}
+
+/// Public customer identity for one store. Phone is normalized before storage.
+model Customer {
+  id              String               @id @default(uuid())
+  storeId         String
+  phoneNormalized String
+  name            String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  store       Store                  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orders      Order[]
+  accessLinks CustomerAccessLink[]
+
+  @@unique([storeId, phoneNormalized])
+  @@index([storeId, createdAt])
+}
+
+/// A revocable opaque link sent to a customer through WhatsApp.
+model CustomerAccessLink {
+  id          String   @id @default(uuid())
+  customerId  String
+  shortIdHash String   @unique
+  revokedAt   DateTime?
+  lastAccessAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer Customer                  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  accessLogs CustomerAccessLog[]
+
+  @@index([customerId, revokedAt])
+}
+
+/// Audit data for shared-link investigations. Device identifiers are hashed.
+model CustomerAccessLog {
+  id             String   @id @default(uuid())
+  accessLinkId   String
+  ipAddress      String?
+  userAgent      String?
+  deviceIdHash   String?
+  createdAt      DateTime @default(now())
+
+  accessLink CustomerAccessLink @relation(fields: [accessLinkId], references: [id], onDelete: Cascade)
+
+  @@index([accessLinkId, createdAt])
 }
 
 model OrderItem {

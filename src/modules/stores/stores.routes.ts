@@ -1,8 +1,24 @@
 import { FastifyInstance } from "fastify";
 import { operatingHourIdSchema, storeOperatingHourByDayResponse, storeOperatingHourInputSchema, storeOperatingHourResponseSchema, storeResponseSchema, updateStoreSchema } from "./stores.schema";
 import { createOperatingHour, deleteHourById, getCurrentStore, listOperatingHour, updateOpenStore, updateStore } from "./stores.service";
+import { invalidateCustomerLinkSchema } from '../customers/customer.schema.js'
+import { invalidateCustomerLink } from '../customers/customer.service.js'
 
 export default function storesRoutes(fastify: FastifyInstance){
+
+    fastify.post('/api/stores/me/customers/access-links/invalidate', {
+        preHandler: [fastify.authenticate],
+        schema: {
+            tags: ['Store'],
+            description: 'Invalidate all active personal links for a customer and issue a new one',
+            body: invalidateCustomerLinkSchema
+        }
+    }, async (request, reply) => {
+        const body = invalidateCustomerLinkSchema.parse(request.body)
+        const link = await invalidateCustomerLink({ storeId: request.user.storeId, phone: body.phone })
+
+        return reply.status(200).send({ success: true, data: link })
+    })
 
     fastify.get('/api/stores/me', {
         preHandler: [fastify.authenticate],

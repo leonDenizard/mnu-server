@@ -135,6 +135,27 @@ limitação é aceita nesta fase.
 
 Telefone e `storeId` são referências comerciais, não credenciais de acesso.
 
+## Cliente público e links pessoais
+
+O cardápio geral é identificado pelo `slug` da loja e corresponde no frontend a
+`nomedaloja.mnu.com.br`. A API recebe o slug em `/api/public/menu/:slug`.
+
+Em cada pedido público, a API cria (ou reutiliza) um cliente por `storeId +
+telefone normalizado` e emite um `shortId` opaco novo. O frontend monta o link
+pessoal como `nomedaloja.mnu.com.br/:shortId` e o envia pelo WhatsApp. Links
+anteriores continuam válidos até a loja invalidá-los. Somente o hash do
+`shortId` é guardado no banco.
+
+O link pode ser invalidado manualmente pela loja. A invalidação revoga os links
+anteriores daquele cliente e devolve um novo `shortId` para envio. A cada acesso
+por link pessoal são registrados IP, User-Agent e hash do identificador de
+dispositivo enviado pelo navegador. Esses dados são de auditoria, não uma prova
+de identidade; devem ter retenção e aviso de privacidade compatíveis com a LGPD.
+
+Pelo link geral, a pessoa pode consultar o histórico ao informar o telefone.
+Esse é um atalho deliberado do MVP. A resposta pública nunca inclui número,
+complemento ou CEP do endereço; a rua é truncada.
+
 ## Eventos e SSE
 
 Toda criação ou mudança de estado grava um registro em `OrderEventOutbox` na
@@ -190,6 +211,10 @@ maiores, podemos trocar o mecanismo de despertar por Redis ou PostgreSQL
 - `POST /api/orders/:id/reject`
 - `POST /api/orders/:id/cancel`
 - `POST /api/public/orders/access/:token/cancel`
+- `POST /api/public/menu/:slug/orders`
+- `POST /api/public/menu/:slug/customers/orders`
+- `GET /api/public/menu/:slug/customers/access/:shortId`
+- `POST /api/stores/me/customers/access-links/invalidate`
 
 Rejeição e cancelamento da loja recebem:
 
