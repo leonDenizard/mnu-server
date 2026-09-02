@@ -3,13 +3,19 @@ import {
     inputSlugParamsSchema,
     publicCreateOrderResponseSchema,
     publicCustomerOrdersResponseSchema,
+    publicPersonalCustomerResponseSchema,
     publicMenuResponseSchema
 } from "./publicMenu.schema";
 import { getPublicMenu } from "./publicMenu.service";
 import { createPublicOrder } from '../../orders/order.service.js'
-import { createPublicOrderInputSchema } from '../../orders/order.schema.js'
-import { publicCustomerLookupSchema, shortIdParamsSchema } from '../../customers/customer.schema.js'
-import { getPublicCustomerByShortId, getPublicCustomerOrdersByPhone } from '../../customers/customer.service.js'
+import { createPublicOrderInputSchema, orderStateResponseSchema } from '../../orders/order.schema.js'
+import { publicCustomerLookupSchema, publicCustomerOrderParamsSchema, shortIdParamsSchema } from '../../customers/customer.schema.js'
+import {
+    cancelPublicCustomerOrderByPhone,
+    cancelPublicCustomerOrderByShortId,
+    getPublicCustomerByShortId,
+    getPublicCustomerOrdersByPhone
+} from '../../customers/customer.service.js'
 
 export default function publicMenuRoutes(fastify: FastifyInstance){
 
@@ -24,7 +30,23 @@ export default function publicMenuRoutes(fastify: FastifyInstance){
     }, async (request, reply) => {
         const params = inputSlugParamsSchema.parse(request.params)
         const body = createPublicOrderInputSchema.parse(request.body)
+        request.log.info({
+            workflow: 'public-order',
+            stage: 'received',
+            storeSlug: params.slug,
+            serviceType: body.serviceType,
+            paymentMethod: body.paymentMethod,
+            itemCount: body.items.length
+        }, 'Public order creation started')
         const result = await createPublicOrder({ slug: params.slug, data: body })
+        request.log.info({
+            workflow: 'public-order',
+            stage: 'created',
+            storeSlug: params.slug,
+            orderId: result.order.id,
+            orderNumber: result.order.orderNumber,
+            status: result.order.status
+        }, 'Public order created')
 
         return reply.status(201).send({
             success: true,
@@ -53,12 +75,27 @@ export default function publicMenuRoutes(fastify: FastifyInstance){
         return reply.status(200).send({ success: true, data: result })
     })
 
+    fastify.post('/api/public/menu/:slug/customers/orders/:orderId/cancel', {
+        schema: {
+            tags: ['Public Menu'],
+            description: 'Cancel a pending customer order after identifying by phone',
+            params: inputSlugParamsSchema.merge(publicCustomerOrderParamsSchema),
+            body: publicCustomerLookupSchema,
+            response: { 200: orderStateResponseSchema }
+        }
+    }, async (request, reply) => {
+        const params = inputSlugParamsSchema.merge(publicCustomerOrderParamsSchema).parse(request.params)
+        const body = publicCustomerLookupSchema.parse(request.body)
+        const order = await cancelPublicCustomerOrderByPhone({ slug: params.slug, phone: body.phone, orderId: params.orderId })
+        return reply.status(200).send({ success: true, data: order })
+    })
+
     fastify.get('/api/public/menu/:slug/customers/access/:shortId', {
         schema: {
             tags: ['Public Menu'],
             description: 'Open a revocable personal customer link and record its access',
             params: inputSlugParamsSchema.merge(shortIdParamsSchema),
-            response: { 200: publicCustomerOrdersResponseSchema }
+            response: { 200: publicPersonalCustomerResponseSchema }
         }
     }, async (request, reply) => {
         const params = inputSlugParamsSchema.merge(shortIdParamsSchema).parse(request.params)
@@ -73,6 +110,19 @@ export default function publicMenuRoutes(fastify: FastifyInstance){
             deviceId
         })
         return reply.status(200).send({ success: true, data: result })
+    })
+
+    fastify.post('/api/public/menu/:slug/customers/access/:shortId/orders/:orderId/cancel', {
+        schema: {
+            tags: ['Public Menu'],
+            description: 'Cancel a pending customer order through its personal link',
+            params: inputSlugParamsSchema.merge(shortIdParamsSchema).merge(publicCustomerOrderParamsSchema),
+            response: { 200: orderStateResponseSchema }
+        }
+    }, async (request, reply) => {
+        const params = inputSlugParamsSchema.merge(shortIdParamsSchema).merge(publicCustomerOrderParamsSchema).parse(request.params)
+        const order = await cancelPublicCustomerOrderByShortId({ slug: params.slug, shortId: params.shortId, orderId: params.orderId })
+        return reply.status(200).send({ success: true, data: order })
     })
 
     fastify.get('/api/public/menu/:slug', {

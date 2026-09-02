@@ -43,7 +43,7 @@ describe('public customer access', () => {
 
   it('returns customer history scoped by the store slug with an address that hides the number', async () => {
     prismaMock.customer.findFirst.mockResolvedValue({
-      id: 'customer-1', name: 'Leon', orders: [order]
+      id: 'customer-1', name: 'Leon', orders: [order], addresses: []
     })
 
     const result = await getPublicCustomerOrdersByPhone({ slug: 'leons', phone: '(11) 99999-9999' })
@@ -53,6 +53,7 @@ describe('public customer access', () => {
     }))
     expect(result).toEqual({
       customerName: 'Leon',
+      addresses: [],
       orders: [expect.objectContaining({
         deliveryAddressLabel: 'Rua das Flor…, Centro, São Paulo'
       })]
@@ -62,7 +63,7 @@ describe('public customer access', () => {
 
   it('records IP, user agent and a hashed device id when a personal link is opened', async () => {
     prismaMock.customerAccessLink.findFirst.mockResolvedValue({
-      id: 'link-1', customer: { name: 'Leon', orders: [order] }
+      id: 'link-1', customer: { name: 'Leon', orders: [order], addresses: [] }
     })
     prismaMock.customerAccessLink.update.mockResolvedValue({})
     prismaMock.customerAccessLog.create.mockResolvedValue({})

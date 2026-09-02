@@ -74,11 +74,40 @@ export const publicCustomerOrderSchema = z.object({
     updatedAt: z.string().datetime()
 })
 
+const publicMaskedAddressSchema = z.object({
+    id: z.string().uuid(),
+    label: z.string().nullable(),
+    addressLabel: z.string()
+})
+
+const publicFullAddressSchema = z.object({
+    id: z.string().uuid(),
+    label: z.string().nullable(),
+    street: z.string(),
+    number: z.number().int().nullable(),
+    neighborhood: z.string(),
+    city: z.string(),
+    state: z.string(),
+    zipCode: z.string(),
+    complement: z.string().nullable(),
+    isDefault: z.boolean()
+})
+
 export const publicCustomerOrdersResponseSchema = z.object({
     success: z.literal(true),
     data: z.object({
         customerName: z.string().nullable(),
-        orders: z.array(publicCustomerOrderSchema)
+        orders: z.array(publicCustomerOrderSchema),
+        addresses: z.array(publicMaskedAddressSchema)
+    })
+})
+
+export const publicPersonalCustomerResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.object({
+        customerName: z.string().nullable(),
+        orders: z.array(publicCustomerOrderSchema),
+        addresses: z.array(publicFullAddressSchema)
     })
 })
 

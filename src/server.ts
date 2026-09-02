@@ -27,7 +27,22 @@ import { globalErrorHandler } from './shared/errors/error-handler.js'
 import { startOrderExpirationWorker } from './modules/orders/order-expiration.worker.js'
 
 const fastify = Fastify({
-  logger: false
+  logger: {
+    level: process.env.LOG_LEVEL ?? 'info',
+    redact: {
+      paths: [
+        'req.headers.authorization',
+        'req.headers.cookie',
+        'req.body.password',
+        'req.body.ownerPassword',
+        'req.body.customerPhone',
+        'req.body.deliveryStreet',
+        'req.body.deliveryAddressNumber',
+        'req.body.deliveryZipCode'
+      ],
+      censor: '[REDACTED]'
+    }
+  }
 }).withTypeProvider<ZodTypeProvider>()
 
 fastify.setValidatorCompiler(validatorCompiler)
@@ -115,7 +130,7 @@ fastify.addHook('onClose', async () => {
 const start = async () => {
   try {
     await prisma.$connect()
-    console.log('✅ Database connected successfully')
+    fastify.log.info('Database connected successfully')
 
     const PORT = Number(process.env.PORT) || 3000
     const HOST = process.env.HOST || '0.0.0.0'
@@ -123,9 +138,9 @@ const start = async () => {
     await fastify.listen({ port: PORT, host: HOST })
     stopOrderExpirationWorker = startOrderExpirationWorker({ logger: fastify.log })
     
-    console.log(`Server running at http://localhost:${PORT}`)
-    console.log(`Swagger UI: http://localhost:${PORT}/docs`)
-    console.log(`Scalar Reference: http://localhost:${PORT}/reference`)
+    fastify.log.info({ port: PORT, host: HOST }, 'Server started')
+    fastify.log.info(`Swagger UI: http://localhost:${PORT}/docs`)
+    fastify.log.info(`Scalar Reference: http://localhost:${PORT}/reference`)
   } catch (err) {
     fastify.log.error(err)
     await prisma.$disconnect()
@@ -133,5 +148,4 @@ const start = async () => {
   }
 }
 
-console.log("Satar server")
 start()

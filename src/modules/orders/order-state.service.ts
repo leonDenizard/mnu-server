@@ -385,6 +385,48 @@ export async function cancelOrderByCustomerToken(token: string): Promise<OrderSt
   return mapOrderState(updatedOrder)
 }
 
+export async function cancelOrderByCustomerId({
+  customerId,
+  orderId
+}: {
+  customerId: string
+  orderId: string
+}): Promise<OrderStateOutput> {
+  const now = new Date()
+  const updatedOrderId = await prisma.$transaction(async (tx) => {
+    const order = await tx.order.findFirst({
+      where: { id: orderId, customerId },
+      select: { id: true, storeId: true, status: true, version: true }
+    })
+
+    if (!order) throw new NotFoundError('Order not found')
+    if (order.status !== 'PENDING') {
+      throw new ConflictError('Customer can only cancel an order awaiting acceptance')
+    }
+
+    const updated = await tx.order.updateMany({
+      where: { id: order.id, customerId, status: 'PENDING', version: order.version },
+      data: {
+        status: 'CANCELED', cancellationType: 'CUSTOMER_CANCELED',
+        cancellationReason: null, canceledAt: now, acceptanceExpiresAt: null,
+        version: { increment: 1 }
+      }
+    })
+    if (updated.count === 0) throw new ConflictError('Order was updated by another operation')
+
+    await tx.orderStatusHistory.create({
+      data: { orderId: order.id, previousStatus: 'PENDING', status: 'CANCELED', action: 'CUSTOMER_CANCELED', actorType: 'CUSTOMER' }
+    })
+    await enqueueStatusEvent({
+      tx, orderId: order.id, storeId: order.storeId, previousStatus: 'PENDING', status: 'CANCELED',
+      action: 'CUSTOMER_CANCELED', version: order.version + 1, occurredAt: now
+    })
+    return order.id
+  })
+
+  return mapOrderState(await prisma.order.findUniqueOrThrow({ where: { id: updatedOrderId } }))
+}
+
 export async function expirePendingOrders({
   now = new Date(),
   batchSize = 100

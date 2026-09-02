@@ -52,10 +52,24 @@ export function globalErrorHandler(
   reply: FastifyReply
 ) {
   if (error instanceof AppError) {
+    request.log.warn({
+      err: error,
+      requestId: request.id,
+      method: request.method,
+      route: request.routeOptions.url,
+      statusCode: error.statusCode,
+      code: error.code
+    }, 'Handled application error')
     return sendError(reply, error.statusCode, error.code, error.message, error.details)
   }
 
   if (error instanceof ZodError) {
+    request.log.warn({
+      requestId: request.id,
+      method: request.method,
+      route: request.routeOptions.url,
+      issues: mapZodIssues(error)
+    }, 'Request payload validation failed')
     return sendError(
       reply,
       400,
@@ -66,6 +80,12 @@ export function globalErrorHandler(
   }
 
   if ('validation' in error && error.validation) {
+    request.log.warn({
+      requestId: request.id,
+      method: request.method,
+      route: request.routeOptions.url,
+      issues: mapFastifyValidation(error as FastifyError)
+    }, 'Fastify request validation failed')
     return sendError(
       reply,
       400,
@@ -85,7 +105,12 @@ export function globalErrorHandler(
     }
   }
 
-  request.log.error({ err: error }, 'Unhandled request error')
+  request.log.error({
+    err: error,
+    requestId: request.id,
+    method: request.method,
+    route: request.routeOptions.url
+  }, 'Unhandled request error')
 
   return sendError(reply, 500, 'INTERNAL_ERROR', 'Internal server error')
 }

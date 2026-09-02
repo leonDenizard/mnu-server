@@ -1,16 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 
-export function hashCustomerShortId(shortId: string) {
-  return createHash('sha256').update(shortId).digest('hex')
-}
-
 export function createCustomerShortId() {
-  const shortId = randomBytes(16).toString('base64url')
-
-  return {
-    shortId,
-    shortIdHash: hashCustomerShortId(shortId)
-  }
+  return randomBytes(16).toString('base64url')
 }
 
 export function normalizeCustomerPhone(phone: string) {

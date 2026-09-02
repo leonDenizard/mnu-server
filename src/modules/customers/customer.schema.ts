@@ -10,6 +10,10 @@ export const shortIdParamsSchema = z.object({
   shortId: z.string().min(16).max(128)
 })
 
+export const publicCustomerOrderParamsSchema = z.object({
+  orderId: z.string().uuid()
+})
+
 export const invalidateCustomerLinkSchema = z.object({
   phone: customerPhoneSchema
 })

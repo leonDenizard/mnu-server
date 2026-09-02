@@ -1,11 +1,11 @@
 import prisma from '../../database.js'
 import {
   createCustomerShortId,
-  hashCustomerShortId,
   hashDeviceId,
   normalizeCustomerPhone
 } from './customer-access-token.js'
 import { BadRequestError, NotFoundError } from '../../shared/errors/app-error.js'
+import { cancelOrderByCustomerId } from '../orders/order-state.service.js'
 
 type PublicOrderRow = {
   id: string
@@ -44,6 +44,14 @@ function mapPublicOrder(order: PublicOrderRow) {
   }
 }
 
+function mapMaskedAddress(address: { id: string, label: string | null, street: string, neighborhood: string, city: string }) {
+  return {
+    id: address.id,
+    label: address.label,
+    addressLabel: [truncateAddress(address.street), address.neighborhood, address.city].filter(Boolean).join(', ')
+  }
+}
+
 const publicOrderSelect = {
   id: true,
   orderNumber: true,
@@ -70,17 +78,19 @@ export async function getPublicCustomerOrdersByPhone({ slug, phone }: { slug: st
     select: {
       id: true,
       name: true,
+      addresses: { where: { active: true }, select: { id: true, label: true, street: true, neighborhood: true, city: true } },
       orders: { select: publicOrderSelect, orderBy: { createdAt: 'desc' } }
     }
   })
 
   if (!customer) {
-    return { customerName: null, orders: [] }
+    return { customerName: null, orders: [], addresses: [] }
   }
 
   return {
     customerName: customer.name,
-    orders: customer.orders.map(mapPublicOrder)
+    orders: customer.orders.map(mapPublicOrder),
+    addresses: customer.addresses.map(mapMaskedAddress)
   }
 }
 
@@ -99,7 +109,7 @@ export async function getPublicCustomerByShortId({
 }) {
   const link = await prisma.customerAccessLink.findFirst({
     where: {
-      shortIdHash: hashCustomerShortId(shortId),
+      shortId,
       revokedAt: null,
       customer: { store: { slug } }
     },
@@ -108,6 +118,11 @@ export async function getPublicCustomerByShortId({
       customer: {
         select: {
           name: true,
+          addresses: {
+            where: { active: true },
+            select: { id: true, label: true, street: true, number: true, neighborhood: true, city: true, state: true, zipCode: true, complement: true, isDefault: true },
+            orderBy: [{ isDefault: 'desc' }, { updatedAt: 'desc' }]
+          },
           orders: { select: publicOrderSelect, orderBy: { createdAt: 'desc' } }
         }
       }
@@ -135,7 +150,8 @@ export async function getPublicCustomerByShortId({
 
   return {
     customerName: link.customer.name,
-    orders: link.customer.orders.map(mapPublicOrder)
+    orders: link.customer.orders.map(mapPublicOrder),
+    addresses: link.customer.addresses
   }
 }
 
@@ -163,9 +179,28 @@ export async function invalidateCustomerLink({ storeId, phone }: { storeId: stri
       data: { revokedAt: new Date() }
     }),
     prisma.customerAccessLink.create({
-      data: { customerId: customer.id, shortIdHash: link.shortIdHash }
+      data: { customerId: customer.id, shortId: link }
     })
   ])
 
-  return { shortId: link.shortId }
+  return { shortId: link }
+}
+
+export async function cancelPublicCustomerOrderByPhone({ slug, phone, orderId }: { slug: string, phone: string, orderId: string }) {
+  let phoneNormalized: string
+  try { phoneNormalized = normalizeCustomerPhone(phone) } catch { throw new BadRequestError('A valid customer phone is required') }
+  const customer = await prisma.customer.findFirst({
+    where: { phoneNormalized, store: { slug } }, select: { id: true }
+  })
+  if (!customer) throw new NotFoundError('Customer not found')
+  return cancelOrderByCustomerId({ customerId: customer.id, orderId })
+}
+
+export async function cancelPublicCustomerOrderByShortId({ slug, shortId, orderId }: { slug: string, shortId: string, orderId: string }) {
+  const link = await prisma.customerAccessLink.findFirst({
+    where: { shortId, revokedAt: null, customer: { store: { slug } } },
+    select: { customerId: true }
+  })
+  if (!link) throw new NotFoundError('Customer link not found or has been revoked')
+  return cancelOrderByCustomerId({ customerId: link.customerId, orderId })
 }

@@ -796,13 +796,17 @@ export async function createPublicOrder({
     }
   })
 
-  // The raw value is intentionally never persisted. Issue a fresh personal
-  // link on each public checkout while keeping existing links valid until the
-  // store explicitly invalidates them.
-  const newLink = createCustomerShortId()
-  await prisma.customerAccessLink.create({
-    data: { customerId: customer.id, shortIdHash: newLink.shortIdHash }
+  const activeLink = await prisma.customerAccessLink.findFirst({
+    where: { customerId: customer.id, revokedAt: null, shortId: { not: null } },
+    select: { shortId: true }
   })
+  const customerShortId = activeLink?.shortId ?? createCustomerShortId()
+
+  if (!activeLink) {
+    await prisma.customerAccessLink.create({
+      data: { customerId: customer.id, shortId: customerShortId }
+    })
+  }
 
   const result = await createOrder({
     storeId: store.id,
@@ -810,8 +814,40 @@ export async function createPublicOrder({
     data: { ...data, customerPhone: phoneNormalized }
   })
 
+  if (data.serviceType === 'DELIVERY' && data.deliveryStreet && data.deliveryNeighborhood && data.deliveryCity && data.deliveryState && data.deliveryZipCode) {
+    const savedAddress = await prisma.customerAddress.findFirst({
+      where: {
+        customerId: customer.id,
+        active: true,
+        street: data.deliveryStreet,
+        number: data.deliveryAddressNumber ?? null,
+        neighborhood: data.deliveryNeighborhood,
+        city: data.deliveryCity,
+        state: data.deliveryState,
+        zipCode: data.deliveryZipCode,
+        complement: data.deliveryComplement ?? null
+      },
+      select: { id: true }
+    })
+
+    if (!savedAddress) {
+      await prisma.customerAddress.create({
+        data: {
+          customerId: customer.id,
+          street: data.deliveryStreet,
+          number: data.deliveryAddressNumber ?? null,
+          neighborhood: data.deliveryNeighborhood,
+          city: data.deliveryCity,
+          state: data.deliveryState,
+          zipCode: data.deliveryZipCode,
+          complement: data.deliveryComplement ?? null
+        }
+      })
+    }
+  }
+
   return {
     ...result,
-    customerShortId: newLink.shortId
+    customerShortId
   }
 }

@@ -32,6 +32,7 @@ Documentação útil:
 - [docs/domain.md](./docs/domain.md)
 - [docs/api-conventions.md](./docs/api-conventions.md)
 - [docs/order-lifecycle.md](./docs/order-lifecycle.md)
+- [docs/public-customer-module.md](./docs/public-customer-module.md)
 
 ## Instalação
 
