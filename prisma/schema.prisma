@@ -127,9 +127,26 @@ model User {
   storeId              String
   store                Store                @relation(fields: [storeId], references: [id])
   orderStatusHistories OrderStatusHistory[]
+  onboardingHandoffs  AuthHandoffCode[]
 
   @@unique([email, storeId])
   @@index([storeId])
+}
+
+/// One-time code used to move a newly onboarded owner from the marketing site
+/// to the administrative app without exposing a JWT in the URL.
+model AuthHandoffCode {
+  id        String   @id @default(uuid())
+  codeHash  String   @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
 }
 
 /// =================

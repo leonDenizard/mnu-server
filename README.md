@@ -18,7 +18,7 @@ API backend para gestão de lojas, cardápio e pedidos, construída com Fastify,
 O projeto é organizado por módulos de domínio.
 
 Os testes ficam em uma pasta `test/` dentro do domínio correspondente e são
-executados com `npm test`.
+executados com `pnpm test`.
 
 Principais áreas atuais:
 - `auth`
@@ -38,7 +38,7 @@ Documentação útil:
 
 ### 1. Instalar dependências
 ```bash
-npm install
+pnpm install
 ```
 
 ### 2. Subir o PostgreSQL com Docker
@@ -48,13 +48,13 @@ docker-compose up -d
 
 ### 3. Configurar Prisma
 ```bash
-npm run db:generate
-npm run db:migrate
+pnpm db:generate
+pnpm db:migrate
 ```
 
 ### 4. Iniciar o servidor
 ```bash
-npm run dev
+pnpm dev
 ```
 
 ## Documentação local
@@ -66,7 +66,7 @@ npm run dev
 
 ### Prisma Studio
 ```bash
-npm run db:studio
+pnpm db:studio
 ```
 
 ### Parar PostgreSQL
@@ -97,10 +97,10 @@ O projeto segue uma arquitetura em camadas por módulo:
 - `schemas` definem contratos com Zod
 
 ## Scripts disponíveis
-- `npm run dev` - inicia servidor em desenvolvimento
-- `npm run build` - compila TypeScript
-- `npm start` - inicia servidor em produção
-- `npm run db:migrate` - cria/aplica migrações
-- `npm run db:generate` - gera o Prisma Client
-- `npm run db:studio` - abre o Prisma Studio
-- `npm test` - executa os testes
+- `pnpm dev` - inicia servidor em desenvolvimento
+- `pnpm build` - compila TypeScript
+- `pnpm start` - inicia servidor em produção
+- `pnpm db:migrate` - cria/aplica migrações
+- `pnpm db:generate` - gera o Prisma Client
+- `pnpm db:studio` - abre o Prisma Studio
+- `pnpm test` - executa os testes

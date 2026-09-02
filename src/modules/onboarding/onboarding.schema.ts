@@ -26,5 +26,13 @@ export const onboardingResponseSchema = z.object({
   })
 })
 
+export const onboardingWebResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    handoffCode: z.string().min(32),
+    expiresIn: z.number().int().positive()
+  })
+})
+
 export type OnboardingInput = z.infer<typeof onboardingSchema>
 export type OnboardingResponse = z.infer<typeof onboardingResponseSchema>

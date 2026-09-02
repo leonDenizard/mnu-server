@@ -7,6 +7,10 @@ export const loginSchema = z.object({
     password: z.string().min(6, "Password must be at least 6 charactes long")
 })
 
+export const onboardingHandoffExchangeSchema = z.object({
+  code: z.string().min(32)
+})
+
 export const authUserSchema = z.object({
     id: z.string().uuid(),
     name: z.string(),
@@ -32,6 +36,8 @@ export const loginResponseSchema = z.object({
         user: authUserSchema
     })
 })
+
+export const onboardingHandoffExchangeResponseSchema = loginResponseSchema
 
 export const authErrorResponseSchema = errorResponseSchema
 
