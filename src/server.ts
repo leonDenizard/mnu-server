@@ -11,6 +11,8 @@ import {
 } from 'fastify-type-provider-zod'
 import 'dotenv/config'
 import jwt from '@fastify/jwt'
+import cors from '@fastify/cors'
+import rateLimit from '@fastify/rate-limit'
 
 import prisma from './database.js'
 import healthRoutes from './modules/health/health.routes.js'
@@ -48,6 +50,27 @@ const fastify = Fastify({
 fastify.setValidatorCompiler(validatorCompiler)
 fastify.setSerializerCompiler(serializerCompiler)
 fastify.setErrorHandler(globalErrorHandler)
+
+await fastify.register(cors, {
+  origin: ['http://localhost:3001'],
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Authorization', 'Content-Type', 'X-Device-Id', 'Last-Event-ID'],
+  credentials: false,
+  maxAge: 86_400
+})
+
+await fastify.register(rateLimit, {
+  global: false,
+  max: 100,
+  timeWindow: '1 minute',
+  errorResponseBuilder: (_request, context) => ({
+    success: false,
+    error: {
+      code: 'RATE_LIMITED',
+      message: `Too many requests. Try again in ${Math.ceil(context.ttl / 1000)} seconds.`
+    }
+  })
+})
 
 await fastify.register(swagger, {
   openapi: {

@@ -4,6 +4,9 @@ import { buildTokenPayload, login } from "./auth.service";
 
 export default function authRoutes(fastify: FastifyInstance) {
     fastify.post('/auth/login', {
+        config: {
+            rateLimit: { max: 5, timeWindow: '15 minutes' }
+        },
         schema: {
             tags: ['Auth'],
             description: 'Authenticate user and return access token',

@@ -20,6 +20,9 @@ import {
 export default function publicMenuRoutes(fastify: FastifyInstance){
 
     fastify.post('/api/public/menu/:slug/orders', {
+        config: {
+            rateLimit: { max: 5, timeWindow: '10 minutes' }
+        },
         schema: {
             tags: ['Public Menu'],
             description: 'Create an order from the public menu',
@@ -61,6 +64,9 @@ export default function publicMenuRoutes(fastify: FastifyInstance){
     })
 
     fastify.post('/api/public/menu/:slug/customers/orders', {
+        config: {
+            rateLimit: { max: 10, timeWindow: '15 minutes' }
+        },
         schema: {
             tags: ['Public Menu'],
             description: 'List customer order history by phone for one store',
@@ -76,6 +82,9 @@ export default function publicMenuRoutes(fastify: FastifyInstance){
     })
 
     fastify.post('/api/public/menu/:slug/customers/orders/:orderId/cancel', {
+        config: {
+            rateLimit: { max: 5, timeWindow: '15 minutes' }
+        },
         schema: {
             tags: ['Public Menu'],
             description: 'Cancel a pending customer order after identifying by phone',
@@ -91,6 +100,9 @@ export default function publicMenuRoutes(fastify: FastifyInstance){
     })
 
     fastify.get('/api/public/menu/:slug/customers/access/:shortId', {
+        config: {
+            rateLimit: { max: 30, timeWindow: '1 minute' }
+        },
         schema: {
             tags: ['Public Menu'],
             description: 'Open a revocable personal customer link and record its access',
@@ -113,6 +125,9 @@ export default function publicMenuRoutes(fastify: FastifyInstance){
     })
 
     fastify.post('/api/public/menu/:slug/customers/access/:shortId/orders/:orderId/cancel', {
+        config: {
+            rateLimit: { max: 5, timeWindow: '15 minutes' }
+        },
         schema: {
             tags: ['Public Menu'],
             description: 'Cancel a pending customer order through its personal link',
@@ -126,6 +141,9 @@ export default function publicMenuRoutes(fastify: FastifyInstance){
     })
 
     fastify.get('/api/public/menu/:slug', {
+            config: {
+                rateLimit: { max: 120, timeWindow: '1 minute' }
+            },
             schema: {
                 tags: ['Public Menu'],
                 description: 'Get current menu on store',
