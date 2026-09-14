@@ -1,8 +1,7 @@
 import type { FastifyInstance } from 'fastify'
-import { onboardingService } from './onboarding.service'
+import { onboardingService, onboardingWebService } from './onboarding.service'
 import { onboardingResponseSchema, onboardingSchema, onboardingWebResponseSchema } from './onboarding.schema'
 import { buildTokenPayload } from '../auth/auth.service'
-import { createOnboardingHandoffCode } from '../auth/auth-handoff.service.js'
 
 export default async function onboardingRoutes(fastify: FastifyInstance) {
   fastify.post('/api/onboarding/web', {
@@ -17,10 +16,9 @@ export default async function onboardingRoutes(fastify: FastifyInstance) {
     }
   }, async (request, reply) => {
     const input = onboardingSchema.parse(request.body)
-    const result = await onboardingService(input)
-    const handoff = await createOnboardingHandoffCode(result.user.id)
+    const result = await onboardingWebService(input)
 
-    return reply.status(201).send({ success: true, data: handoff })
+    return reply.status(201).send({ success: true, data: result.handoff })
   })
 
   fastify.post('/api/onboarding', {

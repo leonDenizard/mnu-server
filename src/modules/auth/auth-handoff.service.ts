@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
+import type { Prisma } from '../../../generated/prisma/index.js'
 
 import prisma from '../../database.js'
 import { ConflictError, UnauthorizedError } from '../../shared/errors/app-error.js'
@@ -6,22 +7,27 @@ import { buildTokenPayload } from './auth.service.js'
 
 const HANDOFF_TTL_MS = 60_000
 
+type AuthHandoffCodeWriter = Pick<Prisma.TransactionClient, 'authHandoffCode'>
+
 function hashCode(code: string) {
   return createHash('sha256').update(code).digest('hex')
 }
 
-export async function createOnboardingHandoffCode(userId: string) {
-  const code = randomBytes(32).toString('base64url')
+export async function createOnboardingHandoffCode(
+  userId: string,
+  database: AuthHandoffCodeWriter = prisma
+) {
+  const handoffCode = randomBytes(32).toString('base64url')
 
-  await prisma.authHandoffCode.create({
+  await database.authHandoffCode.create({
     data: {
       userId,
-      codeHash: hashCode(code),
+      codeHash: hashCode(handoffCode),
       expiresAt: new Date(Date.now() + HANDOFF_TTL_MS)
     }
   })
 
-  return { code, expiresIn: Math.floor(HANDOFF_TTL_MS / 1000) }
+  return { handoffCode, expiresIn: Math.floor(HANDOFF_TTL_MS / 1000) }
 }
 
 export async function exchangeOnboardingHandoffCode(code: string) {

@@ -4,7 +4,7 @@ import { hash } from 'bcryptjs'
 import prisma from '../../../database'
 import { generateSlug } from '../../../utils/slug'
 import type { OnboardingInput } from '../onboarding.schema'
-import { onboardingService } from '../onboarding.service'
+import { onboardingService, onboardingWebService } from '../onboarding.service'
 
 jest.mock('../../../database', () => ({
   __esModule: true,
@@ -165,5 +165,38 @@ describe('onboardingService', () => {
     prismaMock.$transaction.mockRejectedValue(prismaError)
 
     await expect(onboardingService(onboardingInput)).rejects.toThrow('Conflito de dados')
+  })
+
+  it('creates the handoff code in the same transaction as the store and owner', async () => {
+    const createdStore = { id: 'store-3', name: 'Pizza da Maria', slug: 'pizza-da-maria' }
+    const createdUser = {
+      id: 'user-3',
+      name: 'Maria',
+      email: 'maria@email.com',
+      role: 'OWNER',
+      storeId: 'store-3'
+    }
+    const tx = {
+      store: { create: jest.fn().mockResolvedValue(createdStore) },
+      user: { create: jest.fn().mockResolvedValue(createdUser) },
+      authHandoffCode: { create: jest.fn().mockResolvedValue({ id: 'handoff-1' }) }
+    }
+
+    prismaMock.$transaction.mockImplementation(async (callback: (client: typeof tx) => unknown) => callback(tx))
+
+    const result = await onboardingWebService(onboardingInput)
+
+    expect(tx.authHandoffCode.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: createdUser.id,
+        codeHash: expect.any(String),
+        expiresAt: expect.any(Date)
+      })
+    })
+    expect(result).toEqual(expect.objectContaining({
+      store: createdStore,
+      user: expect.objectContaining({ id: createdUser.id }),
+      handoff: expect.objectContaining({ handoffCode: expect.any(String), expiresIn: 60 })
+    }))
   })
 })
