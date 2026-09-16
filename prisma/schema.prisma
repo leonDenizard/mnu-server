@@ -84,6 +84,7 @@ model Store {
   customers      Customer[]
   orderSequences OrderSequence[]
   orderEvents    OrderEventOutbox[]
+  menuImports    MenuImport[]
 }
 
 /// =================
@@ -147,6 +148,24 @@ model AuthHandoffCode {
 
   @@index([userId, expiresAt])
   @@index([expiresAt])
+}
+
+/// Records a completed menu import without retaining identifiers from an external provider.
+model MenuImport {
+  id            String   @id @default(uuid())
+  storeId       String
+  provider      String
+  contentHash   String
+  categoryCount Int
+  productCount  Int
+  groupCount    Int
+  optionCount   Int
+  createdAt     DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, provider, contentHash])
+  @@index([storeId, createdAt])
 }
 
 /// =================

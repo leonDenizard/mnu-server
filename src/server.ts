@@ -13,6 +13,7 @@ import 'dotenv/config'
 import jwt from '@fastify/jwt'
 import cors from '@fastify/cors'
 import rateLimit from '@fastify/rate-limit'
+import multipart from '@fastify/multipart'
 
 import prisma from './database.js'
 import healthRoutes from './modules/health/health.routes.js'
@@ -70,6 +71,11 @@ await fastify.register(rateLimit, {
       message: `Too many requests. Try again in ${Math.ceil(context.ttl / 1000)} seconds.`
     }
   })
+})
+
+await fastify.register(multipart, {
+  limits: { files: 1, fileSize: 5 * 1024 * 1024 },
+  throwFileSizeLimit: false
 })
 
 await fastify.register(swagger, {
