@@ -19,9 +19,6 @@ export default function orderRoutes(fastify: FastifyInstance) {
     '/api/orders/events',
     {
       preHandler: [fastify.authenticate],
-      config: {
-        rateLimit: { max: 10, timeWindow: '1 minute' }
-      },
       schema: {
         tags: ['Orders'],
         description: 'Live store order events over Server-Sent Events (SSE). Authenticate with a Bearer token.',
@@ -42,6 +39,7 @@ export default function orderRoutes(fastify: FastifyInstance) {
         Connection: 'keep-alive',
         'X-Accel-Buffering': 'no'
       })
+      reply.raw.flushHeaders()
       if (!lastEventId) {
         reply.raw.write(`id: ${cursor}\n`)
         reply.raw.write('event: stream.ready\n')
