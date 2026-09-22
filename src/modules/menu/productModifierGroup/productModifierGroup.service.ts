@@ -75,6 +75,7 @@ export async function linkModifierGroupInProduct({ modifierGroupId, productId, s
             name: option.name,
             price: Number(option.price),
             description: option.description,
+            image: option.image,
             displayOrder: option.displayOrder
         })),
         createdAt: link.modifierGroup.createdAt.toISOString(),
@@ -144,6 +145,7 @@ export async function removeModifierGroupInProduct({ modifierGroupId, productId,
             name: option.name,
             price: Number(option.price),
             description: option.description,
+            image: option.image,
             displayOrder: option.displayOrder
         })),
         createdAt: link.modifierGroup.createdAt.toISOString(),
@@ -192,6 +194,7 @@ export async function getAllProductModifierGroup({ productId, storeId }: GetProd
             name: option.name,
             price: Number(option.price),
             description: option.description,
+            image: option.image,
             displayOrder: option.displayOrder
         })),
         createdAt: link.modifierGroup.createdAt.toISOString(),

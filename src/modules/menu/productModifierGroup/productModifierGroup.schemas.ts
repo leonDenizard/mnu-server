@@ -14,11 +14,12 @@ export const productModifierGroupDeleteParamsSchema = z.object({
 })
 
 const linkedModifierOptionOutputSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
-  price: z.number(),
-  description: z.string().max(400).optional().nullable(),
-  displayOrder: z.number()
+    id: z.string().uuid(),
+    name: z.string(),
+    price: z.number(),
+    description: z.string().max(400).optional().nullable(),
+    image: z.string().optional().nullable(),
+    displayOrder: z.number()
 })
 
 const linkedModifierGroupOutputSchema = z.object({
@@ -45,4 +46,3 @@ export type LinkModifierGroupToProductInput = z.infer<typeof linkModifierGroupTo
 export type ProductModifierGroupDeleteParams = z.infer<typeof productModifierGroupDeleteParamsSchema>
 export type LinkedModifierGroupOutput = z.infer<typeof linkedModifierGroupOutputSchema>
 export type ProductModifierGroupsResponse = z.infer<typeof productModifierGroupsResponseSchema>
-
