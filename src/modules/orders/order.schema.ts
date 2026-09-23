@@ -187,6 +187,7 @@ export const orderSummaryOutputSchema = z.object({
     serviceType: orderServiceTypeSchema,
     paymentMethod: z.enum(['PIX', 'CASH', 'CARD', 'OTHER']),
     status: orderStatusSchema,
+    cancellationType: orderCancellationTypeSchema.nullable(),
     total: z.number().nonnegative(),
     itemCount: z.number().int().nonnegative(),
     createdAt: z.string().datetime(),
