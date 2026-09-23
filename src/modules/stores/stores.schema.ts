@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Time must use HH:mm format')
+
 export const storeOutputSchema = z.object({
     id: z.string().uuid(),
     name: z.string(),
@@ -21,6 +23,7 @@ export const storeOutputSchema = z.object({
     longitude: z.number().optional().nullable(),
 
     isOpen: z.boolean(),
+    availabilityMode: z.enum(['ALWAYS_AVAILABLE', 'SCHEDULED', 'SCHEDULED_ONLY', 'PERMANENTLY_CLOSED']),
 
     supportsDelivery: z.boolean(),
     supportsPickup: z.boolean(),
@@ -69,8 +72,8 @@ export const storeOperatingHourOutputSchema = z.object({
 
     id: z.string().uuid(),
     weekday: z.enum(['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']),
-    openTime: z.string(),
-    closeTime: z.string(),
+    openTime: timeSchema,
+    closeTime: timeSchema,
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime()
 
@@ -87,6 +90,22 @@ const operatingHourSlotSchema = z.object({
     id: z.string(),
     openTime: z.string(),
     closeTime: z.string()
+})
+
+const availabilityModeSchema = z.enum(['ALWAYS_AVAILABLE', 'SCHEDULED', 'SCHEDULED_ONLY', 'PERMANENTLY_CLOSED'])
+export const updateStoreAvailabilitySchema = z.object({
+    mode: availabilityModeSchema,
+    operatingHours: z.array(z.object({
+        weekday: z.enum(['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']),
+        openTime: timeSchema,
+        closeTime: timeSchema
+    }))
+})
+
+export const createUnavailabilityPeriodSchema = z.object({
+    startsAt: z.string().datetime(),
+    endsAt: z.string().datetime(),
+    reason: z.string().max(300).optional()
 })
 
 const operatingHoursByDaySchema = z.object({

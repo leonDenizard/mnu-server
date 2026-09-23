@@ -22,6 +22,13 @@ enum StoreStatus {
   BLOCKED
 }
 
+enum StoreAvailabilityMode {
+  ALWAYS_AVAILABLE
+  SCHEDULED
+  SCHEDULED_ONLY
+  PERMANENTLY_CLOSED
+}
+
 enum OrderSequenceMode {
   DAILY
   CONTINUOUS
@@ -62,6 +69,7 @@ model Store {
   longitude Decimal? @db.Decimal(9, 6)
 
   isOpen Boolean @default(true)
+  availabilityMode StoreAvailabilityMode @default(ALWAYS_AVAILABLE)
 
   supportsDelivery Boolean @default(true)
   supportsPickup   Boolean @default(true)
@@ -84,6 +92,8 @@ model Store {
   customers      Customer[]
   orderSequences OrderSequence[]
   orderEvents    OrderEventOutbox[]
+  availabilityEvents StoreAvailabilityEventOutbox[]
+  unavailabilityPeriods StoreUnavailabilityPeriod[]
   menuImports    MenuImport[]
 }
 
@@ -105,6 +115,31 @@ model StoreOperatingHour {
 
   @@index([storeId])
   @@index([storeId, weekday])
+}
+
+model StoreUnavailabilityPeriod {
+  id        String   @id @default(uuid())
+  storeId   String
+  startsAt  DateTime
+  endsAt    DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, startsAt, endsAt])
+}
+
+model StoreAvailabilityEventOutbox {
+  id        BigInt   @id @default(autoincrement())
+  storeId   String
+  type      String
+  payload   Json
+  createdAt DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, id])
 }
 
 /// =================

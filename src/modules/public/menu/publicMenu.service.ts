@@ -1,6 +1,7 @@
 import prisma from "../../../database"
 import { PublicMenuStore } from "./publicMenu.schema"
 import { NotFoundError } from '../../../shared/errors/app-error'
+import { resolveStoreAvailability } from '../../stores/store-opening-hours.js'
 
 type Slug = {
     slug: string
@@ -50,6 +51,13 @@ export async function fetchPublicMenuFromDb(slug: string): Promise<PublicMenuSto
                         }
                     },
                 }
+            },
+            operatingHours: {
+                select: { weekday: true, openTime: true, closeTime: true }
+            },
+            unavailabilityPeriods: {
+                where: { startsAt: { lte: new Date() }, endsAt: { gt: new Date() } },
+                select: { startsAt: true, endsAt: true }
             }
         }
     })
@@ -65,7 +73,7 @@ export async function fetchPublicMenuFromDb(slug: string): Promise<PublicMenuSto
         addressLine: store.addressLine,
         addressNumber: store.addressNumber,
         neighborhood: store.neighborhood,
-        isOpen: store.isOpen,
+        isOpen: resolveStoreAvailability({ mode: store.availabilityMode, operatingHours: store.operatingHours, unavailabilityPeriods: store.unavailabilityPeriods }),
         supportsDelivery: store.supportsDelivery,
         supportsPickup: store.supportsPickup,
         supportsDineIn: store.supportsDineIn,

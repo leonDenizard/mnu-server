@@ -7,6 +7,8 @@ import {
     publicMenuResponseSchema
 } from "./publicMenu.schema";
 import { getPublicMenu } from "./publicMenu.service";
+import prisma from '../../../database.js'
+import { latestStoreAvailabilityEventId, listStoreAvailabilityEvents } from '../../stores/store-availability-events.service.js'
 import { createPublicOrder } from '../../orders/order.service.js'
 import { createPublicOrderInputSchema, orderStateResponseSchema } from '../../orders/order.schema.js'
 import { publicCustomerLookupSchema, publicCustomerOrderParamsSchema, shortIdParamsSchema } from '../../customers/customer.schema.js'
@@ -18,6 +20,33 @@ import {
 } from '../../customers/customer.service.js'
 
 export default function publicMenuRoutes(fastify: FastifyInstance){
+
+    fastify.get('/api/public/menu/:slug/events', {
+        config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+        schema: { tags: ['Public Menu'], description: 'Live store availability events', params: inputSlugParamsSchema }
+    }, async (request, reply) => {
+        const { slug } = inputSlugParamsSchema.parse(request.params)
+        const store = await prisma.store.findUnique({ where: { slug }, select: { id: true } })
+        if (!store) return reply.status(404).send({ success: false, error: { code: 'NOT_FOUND', message: 'Store not found' } })
+        const header = request.headers['last-event-id']
+        let current = typeof header === 'string' ? header : await latestStoreAvailabilityEventId(store.id)
+        let closed = false
+        reply.hijack()
+        reply.raw.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' })
+        reply.raw.flushHeaders()
+        if (!header) reply.raw.write(`id: ${current}\nevent: stream.ready\ndata: ${JSON.stringify({ cursor: current })}\n\n`)
+        const publish = async () => {
+            const events = await listStoreAvailabilityEvents(store.id, current)
+            for (const event of events) {
+                reply.raw.write(`id: ${event.id}\nevent: ${event.type}\ndata: ${JSON.stringify({ ...event.payload as object, occurredAt: event.occurredAt })}\n\n`)
+                current = event.id
+            }
+        }
+        const interval = setInterval(() => { if (!closed) void publish() }, 1_000)
+        const heartbeat = setInterval(() => { if (!closed) reply.raw.write(': keep-alive\n\n') }, 15_000)
+        interval.unref(); heartbeat.unref()
+        request.raw.on('close', () => { closed = true; clearInterval(interval); clearInterval(heartbeat) })
+    })
 
     fastify.post('/api/public/menu/:slug/orders', {
         config: {

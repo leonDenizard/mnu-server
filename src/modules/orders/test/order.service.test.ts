@@ -42,6 +42,9 @@ const baseOrder: CreateOrderInput = {
 const availableStore = {
   status: 'ACTIVE',
   isOpen: true,
+  availabilityMode: 'ALWAYS_AVAILABLE',
+  operatingHours: [],
+  unavailabilityPeriods: [],
   supportsDelivery: true,
   supportsPickup: true,
   supportsDineIn: true,
@@ -77,7 +80,7 @@ describe('createOrder validations', () => {
   it('rejects orders when the store is closed', async () => {
     prismaMock.store.findFirst.mockResolvedValue({
       ...availableStore,
-      isOpen: false
+      availabilityMode: 'PERMANENTLY_CLOSED'
     })
 
     await expect(createOrder(createServiceInput())).rejects.toThrow('Store is closed')

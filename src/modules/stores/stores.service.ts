@@ -58,6 +58,7 @@ export async function getCurrentStore({ storeId }: GetCurrentStoreInput): Promis
         latitude: Number(store.latitude) ? Number(store.latitude) : null,
         longitude: Number(store.longitude) ? Number(store.longitude) : null,
         isOpen: store.isOpen,
+        availabilityMode: store.availabilityMode,
         supportsDelivery: store.supportsDelivery,
         supportsPickup: store.supportsPickup,
         supportsDineIn: store.supportsDineIn,
@@ -96,6 +97,7 @@ export async function updateStore({ storeId, data }: UpdateStoreInput): Promise<
         latitude: updateStore.latitude ? Number(updateStore.latitude) : null,
         longitude: updateStore.longitude ? Number(updateStore.longitude) : null,
         isOpen: updateStore.isOpen,
+        availabilityMode: updateStore.availabilityMode,
         supportsDelivery: updateStore.supportsDelivery,
         supportsPickup: updateStore.supportsPickup,
         supportsDineIn: updateStore.supportsDineIn,
@@ -109,11 +111,29 @@ export async function updateStore({ storeId, data }: UpdateStoreInput): Promise<
 }
 
 export async function updateOpenStore({ storeId, isOpen }: UpdateStoreOpenStatusInput): Promise<StoreOutput> {
+    const openStore = await prisma.$transaction(async (tx) => {
+        const store = await tx.store.update({
+            where: { id: storeId },
+            data: {
+                isOpen,
+                availabilityMode: isOpen ? 'ALWAYS_AVAILABLE' : 'PERMANENTLY_CLOSED'
+            },
+        })
 
+        await tx.storeAvailabilityEventOutbox.create({
+            data: {
+                storeId,
+                type: 'store.availability.changed',
+                payload: {
+                    storeId,
+                    isOpen,
+                    mode: store.availabilityMode,
+                    occurredAt: new Date().toISOString()
+                }
+            }
+        })
 
-    const openStore = await prisma.store.update({
-        where: { id: storeId },
-        data: { isOpen },
+        return store
     })
 
     return {
@@ -135,6 +155,7 @@ export async function updateOpenStore({ storeId, isOpen }: UpdateStoreOpenStatus
         latitude: openStore.latitude ? Number(openStore.latitude) : null,
         longitude: openStore.longitude ? Number(openStore.longitude) : null,
         isOpen: openStore.isOpen,
+        availabilityMode: openStore.availabilityMode,
         supportsDelivery: openStore.supportsDelivery,
         supportsPickup: openStore.supportsPickup,
         supportsDineIn: openStore.supportsDineIn,
@@ -177,6 +198,11 @@ export async function createOperatingHour({ storeId, data }: CreateStoreOperatin
 
     if (hasOverlap) {
         throw new ConflictError('Time slot overlaps an existing operating hour')
+    }
+
+    const lastRegisteredHour = [...existingHour].sort((a, b) => a.openTime.localeCompare(b.openTime)).at(-1)
+    if (lastRegisteredHour && data.openTime < lastRegisteredHour.closeTime) {
+        throw new ConflictError('A new interval must start at or after the previous interval closes')
     }
 
 

@@ -28,6 +28,7 @@ import orderRoutes from './modules/orders/order.routes.js'
 import { UnauthorizedError } from './shared/errors/app-error.js'
 import { globalErrorHandler } from './shared/errors/error-handler.js'
 import { startOrderExpirationWorker } from './modules/orders/order-expiration.worker.js'
+import { startStoreAvailabilityWorker } from './modules/stores/store-availability.worker.js'
 
 const fastify = Fastify({
   logger: {
@@ -54,7 +55,7 @@ fastify.setErrorHandler(globalErrorHandler)
 
 await fastify.register(cors, {
   origin: ['http://localhost:3001'],
-  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Authorization', 'Content-Type', 'X-Device-Id', 'Last-Event-ID'],
   credentials: false,
   maxAge: 86_400
@@ -150,9 +151,11 @@ await fastify.register(orderRoutes)
 //await fastify.register(userRoutes, { prefix: '/api' })
 
 let stopOrderExpirationWorker: (() => void) | undefined
+let stopStoreAvailabilityWorker: (() => void) | undefined
 
 fastify.addHook('onClose', async () => {
   stopOrderExpirationWorker?.()
+  stopStoreAvailabilityWorker?.()
   await prisma.$disconnect()
 })
 
@@ -166,6 +169,7 @@ const start = async () => {
 
     await fastify.listen({ port: PORT, host: HOST })
     stopOrderExpirationWorker = startOrderExpirationWorker({ logger: fastify.log })
+    stopStoreAvailabilityWorker = startStoreAvailabilityWorker({ logger: fastify.log })
     
     fastify.log.info({ port: PORT, host: HOST }, 'Server started')
     fastify.log.info(`Swagger UI: http://localhost:${PORT}/docs`)

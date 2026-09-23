@@ -16,6 +16,7 @@ import {
   createCustomerShortId,
   normalizeCustomerPhone
 } from '../customers/customer-access-token.js'
+import { resolveStoreAvailability, type OperatingHour, type StoreAvailabilityMode, type UnavailabilityPeriod } from '../stores/store-opening-hours.js'
 
 type CreateOrderServiceInput = {
   storeId: string
@@ -166,10 +167,12 @@ function validateUniqueSelections(data: CreateOrderInput) {
 function validateStoreCanReceiveOrder(
   store: {
     status: "ACTIVE" | "SUSPENDED" | "BLOCKED"
-    isOpen: boolean
+    availabilityMode: StoreAvailabilityMode
     supportsDelivery: boolean
     supportsPickup: boolean
     supportsDineIn: boolean
+    operatingHours: OperatingHour[]
+    unavailabilityPeriods: UnavailabilityPeriod[]
   },
   serviceType: CreateOrderInput["serviceType"]
 ) {
@@ -177,7 +180,7 @@ function validateStoreCanReceiveOrder(
     throw new ConflictError("Store is not active")
   }
 
-  if (!store.isOpen) {
+  if (!resolveStoreAvailability({ mode: store.availabilityMode, operatingHours: store.operatingHours, unavailabilityPeriods: store.unavailabilityPeriods })) {
     throw new ConflictError("Store is closed")
   }
 
@@ -598,13 +601,20 @@ export async function createOrder({
     },
     select: {
       status: true,
-      isOpen: true,
+      availabilityMode: true,
       supportsDelivery: true,
       supportsPickup: true,
       supportsDineIn: true,
       autoAcceptOrders: true,
       orderSequenceMode: true,
-      deliveryFeeCents: true
+      deliveryFeeCents: true,
+      operatingHours: {
+        select: { weekday: true, openTime: true, closeTime: true }
+      },
+      unavailabilityPeriods: {
+        where: { startsAt: { lte: new Date() }, endsAt: { gt: new Date() } },
+        select: { startsAt: true, endsAt: true }
+      }
     }
   })
 

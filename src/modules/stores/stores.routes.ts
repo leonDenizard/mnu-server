@@ -1,10 +1,29 @@
 import { FastifyInstance } from "fastify";
-import { operatingHourIdSchema, storeOperatingHourByDayResponse, storeOperatingHourInputSchema, storeOperatingHourResponseSchema, storeResponseSchema, updateStoreSchema } from "./stores.schema";
+import { createUnavailabilityPeriodSchema, operatingHourIdSchema, storeOperatingHourByDayResponse, storeOperatingHourInputSchema, storeOperatingHourResponseSchema, storeResponseSchema, updateStoreAvailabilitySchema, updateStoreSchema } from "./stores.schema";
 import { createOperatingHour, deleteHourById, getCurrentStore, listOperatingHour, updateOpenStore, updateStore } from "./stores.service";
 import { invalidateCustomerLinkSchema } from '../customers/customer.schema.js'
 import { invalidateCustomerLink } from '../customers/customer.service.js'
+import { createUnavailabilityPeriod, updateStoreAvailability } from './store-availability.service.js'
 
 export default function storesRoutes(fastify: FastifyInstance){
+
+    fastify.put('/api/stores/me/availability', {
+        preHandler: [fastify.authenticate],
+        schema: { tags: ['Store'], description: 'Replace store availability mode and operating hours' }
+    }, async (request, reply) => {
+        const body = updateStoreAvailabilitySchema.parse(request.body)
+        await updateStoreAvailability(request.user.storeId, body)
+        return reply.status(200).send({ success: true })
+    })
+
+    fastify.post('/api/stores/me/unavailability-periods', {
+        preHandler: [fastify.authenticate],
+        schema: { tags: ['Store'], description: 'Temporarily close the store for a defined period' }
+    }, async (request, reply) => {
+        const body = createUnavailabilityPeriodSchema.parse(request.body)
+        const period = await createUnavailabilityPeriod(request.user.storeId, { ...body, startsAt: new Date(body.startsAt), endsAt: new Date(body.endsAt) })
+        return reply.status(201).send({ success: true, data: period })
+    })
 
     fastify.post('/api/stores/me/customers/access-links/invalidate', {
         preHandler: [fastify.authenticate],

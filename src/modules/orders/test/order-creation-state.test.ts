@@ -126,6 +126,9 @@ describe('order creation state', () => {
     prismaMock.store.findFirst.mockResolvedValue({
       status: 'ACTIVE',
       isOpen: true,
+      availabilityMode: 'ALWAYS_AVAILABLE',
+      operatingHours: [],
+      unavailabilityPeriods: [],
       supportsDelivery: true,
       supportsPickup: true,
       supportsDineIn: true,
@@ -164,6 +167,9 @@ describe('order creation state', () => {
     prismaMock.store.findFirst.mockResolvedValue({
       status: 'ACTIVE',
       isOpen: true,
+      availabilityMode: 'ALWAYS_AVAILABLE',
+      operatingHours: [],
+      unavailabilityPeriods: [],
       supportsDelivery: true,
       supportsPickup: true,
       supportsDineIn: true,
