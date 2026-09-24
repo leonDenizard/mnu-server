@@ -11,10 +11,11 @@ import prisma from '../../../database.js'
 import { latestStoreAvailabilityEventId, listStoreAvailabilityEvents } from '../../stores/store-availability-events.service.js'
 import { createPublicOrder } from '../../orders/order.service.js'
 import { createPublicOrderInputSchema, orderStateResponseSchema } from '../../orders/order.schema.js'
-import { publicCustomerLookupSchema, publicCustomerOrderParamsSchema, shortIdParamsSchema } from '../../customers/customer.schema.js'
+import { publicCustomerAddressParamsSchema, publicCustomerLookupSchema, publicCustomerOrderParamsSchema, shortIdParamsSchema } from '../../customers/customer.schema.js'
 import {
     cancelPublicCustomerOrderByPhone,
     cancelPublicCustomerOrderByShortId,
+    deletePublicCustomerAddressByShortId,
     getPublicCustomerByShortId,
     getPublicCustomerOrdersByPhone
 } from '../../customers/customer.service.js'
@@ -167,6 +168,21 @@ export default function publicMenuRoutes(fastify: FastifyInstance){
         const params = inputSlugParamsSchema.merge(shortIdParamsSchema).merge(publicCustomerOrderParamsSchema).parse(request.params)
         const order = await cancelPublicCustomerOrderByShortId({ slug: params.slug, shortId: params.shortId, orderId: params.orderId })
         return reply.status(200).send({ success: true, data: order })
+    })
+
+    fastify.delete('/api/public/menu/:slug/customers/access/:shortId/addresses/:addressId', {
+        config: {
+            rateLimit: { max: 10, timeWindow: '15 minutes' }
+        },
+        schema: {
+            tags: ['Public Menu'],
+            description: 'Delete a saved customer address through a personal link',
+            params: inputSlugParamsSchema.merge(shortIdParamsSchema).merge(publicCustomerAddressParamsSchema)
+        }
+    }, async (request, reply) => {
+        const params = inputSlugParamsSchema.merge(shortIdParamsSchema).merge(publicCustomerAddressParamsSchema).parse(request.params)
+        await deletePublicCustomerAddressByShortId(params)
+        return reply.status(204).send()
     })
 
     fastify.get('/api/public/menu/:slug', {

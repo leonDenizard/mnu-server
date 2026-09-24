@@ -155,6 +155,34 @@ export async function getPublicCustomerByShortId({
   }
 }
 
+export async function deletePublicCustomerAddressByShortId({
+  slug,
+  shortId,
+  addressId
+}: {
+  slug: string
+  shortId: string
+  addressId: string
+}) {
+  const link = await prisma.customerAccessLink.findFirst({
+    where: {
+      shortId,
+      revokedAt: null,
+      customer: { store: { slug } }
+    },
+    select: { customerId: true }
+  })
+
+  if (!link) throw new NotFoundError('Customer link not found or has been revoked')
+
+  const result = await prisma.customerAddress.updateMany({
+    where: { id: addressId, customerId: link.customerId, active: true },
+    data: { active: false }
+  })
+
+  if (!result.count) throw new NotFoundError('Customer address not found')
+}
+
 export async function invalidateCustomerLink({ storeId, phone }: { storeId: string, phone: string }) {
   let phoneNormalized: string
   try {

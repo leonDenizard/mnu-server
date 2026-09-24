@@ -54,7 +54,7 @@ fastify.setSerializerCompiler(serializerCompiler)
 fastify.setErrorHandler(globalErrorHandler)
 
 await fastify.register(cors, {
-  origin: ['http://localhost:3001'],
+  origin: ['http://localhost:3001', 'http://192.168.1.249:3001'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Authorization', 'Content-Type', 'X-Device-Id', 'Last-Event-ID'],
   credentials: false,

@@ -14,6 +14,10 @@ export const publicCustomerOrderParamsSchema = z.object({
   orderId: z.string().uuid()
 })
 
+export const publicCustomerAddressParamsSchema = z.object({
+  addressId: z.string().uuid()
+})
+
 export const invalidateCustomerLinkSchema = z.object({
   phone: customerPhoneSchema
 })
